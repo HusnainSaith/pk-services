@@ -47,7 +47,7 @@ export class CmsController {
     return this.cmsService.getFaqs();
   }
 
-  // Admin Routes
+  // Admin Routes - General Content
   @Get('content')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('cms:read')
@@ -100,5 +100,89 @@ export class CmsController {
   @ApiOperation({ summary: 'Publish content' })
   publishContent(@Param('id') id: string) {
     return this.cmsService.publishContent(id);
+  }
+
+  // Pages Management
+  @Post('pages')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('cms:write')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Create new page' })
+  createPage(@Body() dto: CreateContentDto) {
+    return this.cmsService.createPage(dto);
+  }
+
+  @Put('pages/:slug')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('cms:write')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Update page' })
+  updatePage(@Param('slug') slug: string, @Body() dto: UpdateContentDto) {
+    return this.cmsService.updatePage(slug, dto);
+  }
+
+  @Delete('pages/:slug')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('cms:delete')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Delete page' })
+  deletePage(@Param('slug') slug: string) {
+    return this.cmsService.deletePage(slug);
+  }
+
+  // News Management
+  @Post('news')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('cms:write')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Create news article' })
+  createNews(@Body() dto: CreateContentDto) {
+    return this.cmsService.createNews(dto);
+  }
+
+  @Put('news/:id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('cms:write')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Update news' })
+  updateNews(@Param('id') id: string, @Body() dto: UpdateContentDto) {
+    return this.cmsService.updateNews(id, dto);
+  }
+
+  @Delete('news/:id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('cms:delete')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Delete news' })
+  deleteNews(@Param('id') id: string) {
+    return this.cmsService.deleteNews(id);
+  }
+
+  // FAQ Management
+  @Post('faqs')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('cms:write')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Create FAQ' })
+  createFaq(@Body() dto: CreateContentDto) {
+    return this.cmsService.createFaq(dto);
+  }
+
+  @Put('faqs/:id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('cms:write')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Update FAQ' })
+  updateFaq(@Param('id') id: string, @Body() dto: UpdateContentDto) {
+    return this.cmsService.updateFaq(id, dto);
+  }
+
+  @Delete('faqs/:id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('cms:delete')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Delete FAQ' })
+  deleteFaq(@Param('id') id: string) {
+    return this.cmsService.deleteFaq(id);
   }
 }

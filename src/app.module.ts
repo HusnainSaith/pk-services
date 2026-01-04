@@ -15,6 +15,7 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { CmsModule } from './modules/cms/cms.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 
@@ -64,6 +65,7 @@ import { ResponseInterceptor } from './common/interceptor/response.interceptor';
     NotificationsModule,
     CmsModule,
     ReportsModule,
+    AdminModule,
     AuditModule,
     WebhooksModule,
   ],

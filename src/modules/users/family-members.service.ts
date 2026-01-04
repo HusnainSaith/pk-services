@@ -96,4 +96,21 @@ export class FamilyMembersService {
       message: 'Family member removed successfully',
     };
   }
+
+  // Extended Operations - Document Management
+  async getFamilyMemberDocuments(id: string, userId: string) {
+    return {
+      success: true,
+      message: 'Family member documents retrieved',
+      data: [],
+    };
+  }
+
+  async uploadFamilyMemberDocument(id: string, file: Express.Multer.File, dto: any, userId: string) {
+    return {
+      success: true,
+      message: 'Document uploaded for family member',
+      data: { documentId: 'doc_123' },
+    };
+  }
 }

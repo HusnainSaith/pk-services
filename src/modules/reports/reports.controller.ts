@@ -10,12 +10,13 @@ import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 
 @ApiTags('Reports & Analytics')
-@Controller('reports')
+@Controller()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
-  @Get('dashboard')
+  // General Reports
+  @Get('reports/dashboard')
   @Permissions('reports:read')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get dashboard stats' })
@@ -23,23 +24,31 @@ export class ReportsController {
     return this.reportsService.getDashboard();
   }
 
-  @Get('service-requests')
+  @Get('reports/service-requests')
   @Permissions('reports:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Service request metrics' })
+  @ApiOperation({ summary: 'Service request analytics' })
   getServiceRequestMetrics() {
     return this.reportsService.getServiceRequestMetrics();
   }
 
-  @Get('revenue')
+  @Get('reports/subscriptions')
   @Permissions('reports:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Revenue reports' })
+  @ApiOperation({ summary: 'Subscription metrics' })
+  getSubscriptionMetrics() {
+    return this.reportsService.getSubscriptionMetrics();
+  }
+
+  @Get('reports/revenue')
+  @Permissions('reports:read')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Revenue analytics' })
   getRevenueReports() {
     return this.reportsService.getRevenueReports();
   }
 
-  @Get('users')
+  @Get('reports/users')
   @Permissions('reports:read')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'User statistics' })
@@ -47,7 +56,15 @@ export class ReportsController {
     return this.reportsService.getUserStatistics();
   }
 
-  @Get('appointments')
+  @Get('reports/user-activity')
+  @Permissions('reports:read')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'User engagement metrics' })
+  getUserActivityMetrics() {
+    return this.reportsService.getUserActivityMetrics();
+  }
+
+  @Get('reports/appointments')
   @Permissions('reports:read')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Appointment analytics' })
@@ -55,11 +72,36 @@ export class ReportsController {
     return this.reportsService.getAppointmentAnalytics();
   }
 
-  @Get('export')
+  @Get('reports/export')
   @Permissions('reports:export')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Export report data' })
   exportReportData() {
     return this.reportsService.exportReportData();
+  }
+
+  // Admin Dashboard Routes
+  @Get('admin/dashboard/stats')
+  @Permissions('reports:read')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Get overview stats' })
+  getAdminDashboardStats() {
+    return this.reportsService.getAdminDashboardStats();
+  }
+
+  @Get('admin/dashboard/pending-count')
+  @Permissions('reports:read')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Pending requests count' })
+  getPendingRequestsCount() {
+    return this.reportsService.getPendingRequestsCount();
+  }
+
+  @Get('admin/dashboard/workload')
+  @Permissions('reports:read')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Operator workload distribution' })
+  getOperatorWorkload() {
+    return this.reportsService.getOperatorWorkload();
   }
 }

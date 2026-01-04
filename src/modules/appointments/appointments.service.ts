@@ -35,7 +35,7 @@ export class AppointmentsService {
     return { success: true, data: [] };
   }
 
-  async getAvailableSlots(): Promise<string[]> {
+  async getAvailableSlots(operatorId?: string, date?: Date): Promise<string[]> {
     return ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'];
   }
 
@@ -65,5 +65,46 @@ export class AppointmentsService {
 
   async reschedule(id: string, dto: any, userId: string): Promise<any> {
     return { success: true, message: 'Appointment rescheduled' };
+  }
+
+  // Extended Operations - Reminders & Calendar
+  async getReminderHistory(id: string, userId: string): Promise<any> {
+    return {
+      success: true,
+      data: {
+        appointmentId: id,
+        reminders: [
+          {
+            id: 'rem_1',
+            type: 'email',
+            sentAt: new Date(),
+            status: 'delivered'
+          }
+        ]
+      }
+    };
+  }
+
+  async sendReminder(id: string): Promise<any> {
+    return {
+      success: true,
+      message: 'Reminder sent successfully',
+      data: {
+        appointmentId: id,
+        reminderSentAt: new Date()
+      }
+    };
+  }
+
+  async exportCalendar(userId: string): Promise<any> {
+    return {
+      success: true,
+      message: 'Calendar exported',
+      data: {
+        format: 'ical',
+        downloadUrl: '/api/v1/appointments/calendar.ics',
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+      }
+    };
   }
 }

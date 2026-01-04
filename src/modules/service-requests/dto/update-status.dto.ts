@@ -1,24 +1,13 @@
-import { IsString, IsEnum } from 'class-validator';
+import { IsString, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class UpdateServiceRequestStatusDto {
-  @ApiProperty({ enum: ['DRAFT', 'SUBMITTED', 'IN_PROGRESS', 'COMPLETED', 'REJECTED'] })
-  @IsEnum(['DRAFT', 'SUBMITTED', 'IN_PROGRESS', 'COMPLETED', 'REJECTED'])
+export class UpdateStatusDto {
+  @ApiProperty({ description: 'New status' })
+  @IsString()
   status: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ description: 'Status change reason' })
   @IsString()
-  notes?: string;
-}
-
-export class AssignOperatorDto {
-  @ApiProperty()
-  @IsString()
-  operatorId: string;
-}
-
-export class UpdatePriorityDto {
-  @ApiProperty({ enum: ['LOW', 'MEDIUM', 'HIGH', 'URGENT'] })
-  @IsEnum(['LOW', 'MEDIUM', 'HIGH', 'URGENT'])
-  priority: string;
+  @IsOptional()
+  reason?: string;
 }

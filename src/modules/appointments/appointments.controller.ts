@@ -7,6 +7,7 @@ import {
   Param,
   Body,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AppointmentsService } from './appointments.service';
@@ -14,7 +15,7 @@ import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { RescheduleAppointmentDto } from './dto/reschedule-appointment.dto';
 import { CreateAppointmentAdminDto } from './dto/create-appointment-admin.dto';
 import { AssignOperatorDto } from './dto/assign-operator.dto';
-import { UpdateAppointmentStatusDto } from './dto/update-status.dto';
+import { UpdateStatusDto } from './dto/update-status.dto';
 import { CreateTimeSlotsDto } from './dto/create-time-slots.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
@@ -29,8 +30,8 @@ export class AppointmentsController {
   // Public Routes
   @Get('available-slots')
   @ApiOperation({ summary: 'Get available time slots' })
-  getAvailableSlots() {
-    return this.appointmentsService.getAvailableSlots();
+  getAvailableSlots(@Query('operatorId') operatorId?: string, @Query('date') date?: string) {
+    return this.appointmentsService.getAvailableSlots(operatorId, date ? new Date(date) : new Date());
   }
 
   // Customer Routes
@@ -79,6 +80,34 @@ export class AppointmentsController {
     return this.appointmentsService.cancel(id, user.id);
   }
 
+  // Extended Operations - Reminders & Calendar
+  @Get(':id/reminders')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('appointments:read_own')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Get reminder history' })
+  getReminderHistory(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.appointmentsService.getReminderHistory(id, user.id);
+  }
+
+  @Post(':id/send-reminder')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('appointments:write')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Manually trigger reminder' })
+  sendReminder(@Param('id') id: string) {
+    return this.appointmentsService.sendReminder(id);
+  }
+
+  @Get('export-calendar')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('appointments:read_own')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Export calendar (iCal format)' })
+  exportCalendar(@CurrentUser() user: any) {
+    return this.appointmentsService.exportCalendar(user.id);
+  }
+
   // Admin/Operator Routes
   @Get()
   @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -98,15 +127,6 @@ export class AppointmentsController {
     return this.appointmentsService.getCalendar();
   }
 
-  @Post('create')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @Permissions('appointments:write')
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Create appointment (admin)' })
-  createAdmin(@Body() dto: CreateAppointmentAdminDto) {
-    return this.appointmentsService.createAdmin(dto);
-  }
-
   @Patch(':id/assign')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('appointments:assign')
@@ -121,7 +141,7 @@ export class AppointmentsController {
   @Permissions('appointments:write')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Update status' })
-  updateStatus(@Param('id') id: string, @Body() dto: UpdateAppointmentStatusDto) {
+  updateStatus(@Param('id') id: string, @Body() dto: UpdateStatusDto) {
     return this.appointmentsService.updateStatus(id, dto);
   }
 

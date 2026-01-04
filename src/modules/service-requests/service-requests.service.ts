@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { ServiceRequest } from './entities/service-request.entity';
 import { CreateServiceRequestDto } from './dto/create-service-request.dto';
 import { UpdateServiceRequestDto } from './dto/update-service-request.dto';
+import { ReuploadDocumentDto } from './dto/reupload-document.dto';
 
 @Injectable()
 export class ServiceRequestsService {
@@ -16,15 +17,15 @@ export class ServiceRequestsService {
     return { success: true, data: [] };
   }
 
-  async create(dto: CreateServiceRequestDto): Promise<any> {
+  async create(dto: CreateServiceRequestDto, userId: string): Promise<any> {
     return { success: true, message: 'Service request created' };
   }
 
-  async findOne(id: string): Promise<any> {
+  async findOne(id: string, userId: string): Promise<any> {
     return { success: true, data: {} };
   }
 
-  async update(id: string, dto: UpdateServiceRequestDto): Promise<any> {
+  async update(id: string, dto: UpdateServiceRequestDto, userId: string): Promise<any> {
     return { success: true, message: 'Service request updated' };
   }
 
@@ -70,5 +71,31 @@ export class ServiceRequestsService {
 
   async requestDocuments(id: string, dto: any): Promise<any> {
     return { success: true, message: 'Additional documents requested' };
+  }
+
+  // Extended Document Workflow Methods
+  async getMissingDocuments(id: string, userId: string): Promise<any> {
+    return { 
+      success: true, 
+      data: {
+        requestId: id,
+        missingDocuments: [],
+        totalMissing: 0
+      }
+    };
+  }
+
+  async reuploadDocument(id: string, documentId: string, dto: ReuploadDocumentDto, userId: string): Promise<any> {
+    return { 
+      success: true, 
+      message: 'Document reupload tracked',
+      data: {
+        requestId: id,
+        documentId,
+        reason: dto.reason,
+        notes: dto.notes,
+        reuploadedAt: new Date()
+      }
+    };
   }
 }

@@ -1,0 +1,1250 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2024-01-04T12:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2023.5.8",
+  "resources": [
+    {
+      "_id": "wrk_pk_servizi",
+      "parentId": null,
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "name": "PK SERVIZI API",
+      "description": "Complete service management system API",
+      "scope": "collection",
+      "_type": "workspace"
+    },
+    {
+      "_id": "env_base",
+      "parentId": "wrk_pk_servizi",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:3000",
+        "access_token": "",
+        "refresh_token": "",
+        "user_id": "",
+        "service_request_id": "",
+        "appointment_id": ""
+      },
+      "dataPropertyOrder": {
+        "&": [
+          "base_url",
+          "access_token",
+          "refresh_token",
+          "user_id",
+          "service_request_id",
+          "appointment_id"
+        ]
+      },
+      "color": null,
+      "isPrivate": false,
+      "metaSortKey": 1704369600000,
+      "_type": "environment"
+    },
+    {
+      "_id": "fld_auth",
+      "parentId": "wrk_pk_servizi",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "name": "🔐 Authentication",
+      "description": "",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1704369600000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_auth_register",
+      "parentId": "fld_auth",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/auth/register",
+      "name": "Register",
+      "description": "Register new user",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Password123!\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"phone\": \"+1234567890\",\n  \"dateOfBirth\": \"1990-01-01\",\n  \"fiscalCode\": \"RSSMRA90A01H501U\",\n  \"gdprConsent\": true\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1704369600000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_auth_login",
+      "parentId": "fld_auth",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/auth/login",
+      "name": "Login",
+      "description": "User login",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Password123!\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1704369500000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_auth_refresh",
+      "parentId": "fld_auth",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/auth/refresh",
+      "name": "Refresh Token",
+      "description": "Refresh access token",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"refreshToken\": \"{{ _.refresh_token }}\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1704369400000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_auth_me",
+      "parentId": "fld_auth",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/auth/me",
+      "name": "Get Current User",
+      "description": "Get current user info",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704369300000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_auth_logout",
+      "parentId": "fld_auth",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/auth/logout",
+      "name": "Logout",
+      "description": "Logout user",
+      "method": "POST",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704369200000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_auth_forgot_password",
+      "parentId": "fld_auth",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/auth/forgot-password",
+      "name": "Forgot Password",
+      "description": "Request password reset",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"user@example.com\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1704369100000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_auth_reset_password",
+      "parentId": "fld_auth",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/auth/reset-password",
+      "name": "Reset Password",
+      "description": "Reset password with token",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"token\": \"reset-token\",\n  \"newPassword\": \"NewPassword123!\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1704369000000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_auth_change_password",
+      "parentId": "fld_auth",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/auth/change-password",
+      "name": "Change Password",
+      "description": "Change password when logged in",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"currentPassword\": \"Password123!\",\n  \"newPassword\": \"NewPassword123!\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704368900000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_users",
+      "parentId": "wrk_pk_servizi",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "name": "👤 Users",
+      "description": "",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1704369500000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_users_profile",
+      "parentId": "fld_users",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/users/profile",
+      "name": "Get Profile",
+      "description": "Get own profile",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704368800000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_users_update_profile",
+      "parentId": "fld_users",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/users/profile",
+      "name": "Update Profile",
+      "description": "Update own profile",
+      "method": "PUT",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"phone\": \"+1234567890\",\n  \"address\": \"123 Main St, Rome, 00100, RM\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704368700000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_users_extended_profile",
+      "parentId": "fld_users",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/users/profile/extended",
+      "name": "Get Extended Profile",
+      "description": "Get extended profile with all details",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704368600000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_users_gdpr_consent",
+      "parentId": "fld_users",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/users/gdpr/consent",
+      "name": "Update GDPR Consent",
+      "description": "Update consent preferences",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"marketingConsent\": true,\n  \"analyticsConsent\": false,\n  \"dataProcessingConsent\": true,\n  \"notes\": \"Updated consent preferences\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704368500000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_users_data_export",
+      "parentId": "fld_users",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/users/gdpr/data-export",
+      "name": "Request Data Export",
+      "description": "Request user data export",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704368400000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_service_types",
+      "parentId": "wrk_pk_servizi",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "name": "🏷️ Service Types",
+      "description": "",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1704369450000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_service_types_list",
+      "parentId": "fld_service_types",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/service-types",
+      "name": "List Service Types",
+      "description": "List active service types",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1704368300000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_service_types_get",
+      "parentId": "fld_service_types",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/service-types/service-type-id",
+      "name": "Get Service Type",
+      "description": "Get service type details",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1704368200000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_service_types_schema",
+      "parentId": "fld_service_types",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/service-types/service-type-id/schema",
+      "name": "Get Form Schema",
+      "description": "Get form schema for service type",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1704368100000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_service_requests",
+      "parentId": "wrk_pk_servizi",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "name": "📋 Service Requests",
+      "description": "",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1704369400000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_service_requests_my",
+      "parentId": "fld_service_requests",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/service-requests/my",
+      "name": "My Service Requests",
+      "description": "List my service requests",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704368000000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_service_requests_create",
+      "parentId": "fld_service_requests",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/service-requests",
+      "name": "Create Service Request",
+      "description": "Create service request",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"serviceTypeId\": \"service-type-id\",\n  \"familyMemberId\": \"family-member-id\",\n  \"formData\": {\n    \"income\": 25000,\n    \"familySize\": 3,\n    \"notes\": \"Additional information\"\n  },\n  \"priority\": \"NORMAL\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704367900000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_service_requests_get",
+      "parentId": "fld_service_requests",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/service-requests/{{ _.service_request_id }}",
+      "name": "Get Service Request",
+      "description": "Get request details",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704367800000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_service_requests_submit",
+      "parentId": "fld_service_requests",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/service-requests/{{ _.service_request_id }}/submit",
+      "name": "Submit Request",
+      "description": "Submit service request",
+      "method": "POST",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704367700000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_service_requests_status_history",
+      "parentId": "fld_service_requests",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/service-requests/{{ _.service_request_id }}/status-history",
+      "name": "Get Status History",
+      "description": "Get status history",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704367600000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_appointments",
+      "parentId": "wrk_pk_servizi",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "name": "📅 Appointments",
+      "description": "",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1704369300000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_appointments_available",
+      "parentId": "fld_appointments",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/appointments/available-slots",
+      "name": "Available Slots",
+      "description": "Get available time slots",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "date",
+          "value": "2024-01-15"
+        },
+        {
+          "name": "operatorId",
+          "value": ""
+        }
+      ],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1704367500000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_appointments_my",
+      "parentId": "fld_appointments",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/appointments/my",
+      "name": "My Appointments",
+      "description": "List my appointments",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704367400000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_appointments_book",
+      "parentId": "fld_appointments",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/appointments",
+      "name": "Book Appointment",
+      "description": "Book appointment",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"serviceRequestId\": \"service-request-id\",\n  \"operatorId\": \"operator-id\",\n  \"scheduledAt\": \"2024-01-15T10:00:00Z\",\n  \"type\": \"IN_PERSON\",\n  \"notes\": \"Please bring all required documents\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704367300000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_appointments_get",
+      "parentId": "fld_appointments",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/appointments/{{ _.appointment_id }}",
+      "name": "Get Appointment",
+      "description": "Get appointment details",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704367200000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_appointments_reschedule",
+      "parentId": "fld_appointments",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/appointments/{{ _.appointment_id }}/reschedule",
+      "name": "Reschedule Appointment",
+      "description": "Reschedule appointment",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"newScheduledAt\": \"2024-01-16T14:00:00Z\",\n  \"reason\": \"Schedule conflict\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704367100000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_appointments_cancel",
+      "parentId": "fld_appointments",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/appointments/{{ _.appointment_id }}",
+      "name": "Cancel Appointment",
+      "description": "Cancel appointment",
+      "method": "DELETE",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704367000000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_documents",
+      "parentId": "wrk_pk_servizi",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "name": "📄 Documents",
+      "description": "",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1704369200000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_documents_upload",
+      "parentId": "fld_documents",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/documents/upload",
+      "name": "Upload Document",
+      "description": "Upload document",
+      "method": "POST",
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          {
+            "name": "file",
+            "type": "file",
+            "fileName": ""
+          },
+          {
+            "name": "serviceRequestId",
+            "value": "service-request-id"
+          },
+          {
+            "name": "documentType",
+            "value": "IDENTITY_CARD"
+          }
+        ]
+      },
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704366900000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_documents_list",
+      "parentId": "fld_documents",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/documents/request/{{ _.service_request_id }}",
+      "name": "List Request Documents",
+      "description": "List documents for request",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704366800000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_subscriptions",
+      "parentId": "wrk_pk_servizi",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "name": "💳 Subscriptions",
+      "description": "",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1704369100000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_subscriptions_plans",
+      "parentId": "fld_subscriptions",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/subscription-plans",
+      "name": "List Plans",
+      "description": "List subscription plans",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1704366700000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_subscriptions_my",
+      "parentId": "fld_subscriptions",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/subscriptions/my",
+      "name": "My Subscriptions",
+      "description": "List my subscriptions",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704366600000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_subscriptions_usage",
+      "parentId": "fld_subscriptions",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/subscriptions/my/usage",
+      "name": "My Usage Stats",
+      "description": "Get current usage stats",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704366500000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_subscriptions_create",
+      "parentId": "fld_subscriptions",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/subscriptions",
+      "name": "Create Subscription",
+      "description": "Create subscription",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"planId\": \"plan-id\",\n  \"paymentMethodId\": \"pm_card_visa\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704366400000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_courses",
+      "parentId": "wrk_pk_servizi",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "name": "🎓 Courses",
+      "description": "",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1704369000000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_courses_list",
+      "parentId": "fld_courses",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/courses",
+      "name": "List Courses",
+      "description": "List available courses",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1704366300000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_courses_enroll",
+      "parentId": "fld_courses",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/courses/course-id/enroll",
+      "name": "Enroll in Course",
+      "description": "Enroll in course",
+      "method": "POST",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704366200000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_courses_progress",
+      "parentId": "fld_courses",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/courses/course-id/progress",
+      "name": "Get Progress",
+      "description": "Get user's progress in course",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704366100000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_notifications",
+      "parentId": "wrk_pk_servizi",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "name": "🔔 Notifications",
+      "description": "",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1704368900000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_notifications_list",
+      "parentId": "fld_notifications",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/notifications/my",
+      "name": "My Notifications",
+      "description": "List my notifications",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704366000000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_notifications_mark_read",
+      "parentId": "fld_notifications",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/notifications/notification-id/read",
+      "name": "Mark as Read",
+      "description": "Mark notification as read",
+      "method": "PATCH",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704365900000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_cms",
+      "parentId": "wrk_pk_servizi",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "name": "📰 CMS",
+      "description": "",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1704368800000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_cms_pages",
+      "parentId": "fld_cms",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/cms/pages",
+      "name": "List Pages",
+      "description": "List CMS pages",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1704365800000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_cms_news",
+      "parentId": "fld_cms",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/cms/news",
+      "name": "List News",
+      "description": "List news articles",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1704365700000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_cms_faqs",
+      "parentId": "fld_cms",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/cms/faqs",
+      "name": "List FAQs",
+      "description": "List frequently asked questions",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1704365600000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_admin",
+      "parentId": "wrk_pk_servizi",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "name": "⚙️ Admin",
+      "description": "",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1704368700000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_admin_dashboard",
+      "parentId": "fld_admin",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/admin/dashboard/stats",
+      "name": "Dashboard Stats",
+      "description": "Get overview stats",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704365500000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_admin_users",
+      "parentId": "fld_admin",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/users",
+      "name": "List All Users",
+      "description": "List all users (admin)",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704365400000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_admin_service_requests",
+      "parentId": "fld_admin",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/service-requests",
+      "name": "List All Requests",
+      "description": "List all service requests (admin)",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704365300000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_reports",
+      "parentId": "wrk_pk_servizi",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "name": "📊 Reports",
+      "description": "",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1704368600000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_reports_service_requests",
+      "parentId": "fld_reports",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/reports/service-requests",
+      "name": "Service Request Analytics",
+      "description": "Service request analytics",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "startDate",
+          "value": "2024-01-01"
+        },
+        {
+          "name": "endDate",
+          "value": "2024-12-31"
+        }
+      ],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704365200000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "req_reports_revenue",
+      "parentId": "fld_reports",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/reports/revenue",
+      "name": "Revenue Analytics",
+      "description": "Revenue analytics",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "startDate",
+          "value": "2024-01-01"
+        },
+        {
+          "name": "endDate",
+          "value": "2024-12-31"
+        }
+      ],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.access_token }}"
+      },
+      "metaSortKey": -1704365100000,
+      "isPrivate": false,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_webhooks",
+      "parentId": "wrk_pk_servizi",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "name": "🔗 Webhooks",
+      "description": "",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1704368500000,
+      "_type": "request"
+    },
+    {
+      "_id": "req_webhooks_stripe",
+      "parentId": "fld_webhooks",
+      "modified": 1704369600000,
+      "created": 1704369600000,
+      "url": "{{ _.base_url }}/webhooks/stripe",
+      "name": "Stripe Webhook",
+      "description": "Stripe webhook endpoint",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"id\": \"evt_test_webhook\",\n  \"object\": \"event\",\n  \"type\": \"payment_intent.succeeded\",\n  \"data\": {\n    \"object\": {\n      \"id\": \"pi_test_payment\",\n      \"amount\": 2000,\n      \"currency\": \"eur\",\n      \"status\": \"succeeded\"\n    }\n  }\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Stripe-Signature",
+          "value": "test-signature"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1704365000000,
+      "isPrivate": false,
+      "_type": "request"
+    }
+  ]
+}

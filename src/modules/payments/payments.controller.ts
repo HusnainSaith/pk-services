@@ -34,7 +34,25 @@ export class PaymentsController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Download receipt' })
   downloadReceipt(@Param('id') id: string, @CurrentUser() user: any) {
-    return { success: true, message: 'Receipt downloaded' };
+    return this.paymentsService.downloadReceipt(id, user.id);
+  }
+
+  @Get(':id/invoice')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('payments:read_own')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Generate formal invoice' })
+  generateInvoice(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.paymentsService.generateInvoice(id, user.id);
+  }
+
+  @Post(':id/resend-receipt')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('payments:read_own')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Resend receipt email' })
+  resendReceipt(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.paymentsService.resendReceipt(id, user.id);
   }
 
   // Admin Routes

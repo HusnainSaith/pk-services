@@ -36,6 +36,12 @@ export class CoursesController {
     return this.coursesService.findOne(id);
   }
 
+  @Get(':id/modules')
+  @ApiOperation({ summary: 'Get course modules/lessons' })
+  getCourseModules(@Param('id') id: string) {
+    return this.coursesService.getCourseModules(id);
+  }
+
   // Customer Routes
   @Post(':id/enroll')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -52,7 +58,7 @@ export class CoursesController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'List my enrollments' })
   getMyEnrollments(@CurrentUser() user: any) {
-    return this.coursesService.findEnrollmentsByUser(user.id);
+    return this.coursesService.getMyEnrollments(user.id);
   }
 
   @Delete(':id/unenroll')
@@ -71,6 +77,25 @@ export class CoursesController {
   @ApiOperation({ summary: 'Download certificate' })
   getCertificate(@Param('id') id: string, @CurrentUser() user: any) {
     return this.coursesService.getCertificate(id, user.id);
+  }
+
+  // Extended Operations - Progress Tracking
+  @Get(':id/progress')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('courses:read_own')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Get user\'s progress in a course' })
+  getCourseProgress(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.coursesService.getCourseProgress(id, user.id);
+  }
+
+  @Post(':id/complete-module')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('courses:enroll')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Mark module/lesson complete' })
+  completeModule(@Param('id') id: string, @Body() dto: { moduleId: string }, @CurrentUser() user: any) {
+    return this.coursesService.completeModule(id, dto.moduleId, user.id);
   }
 
   // Admin Routes
@@ -116,7 +141,7 @@ export class CoursesController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'List course enrollments' })
   getCourseEnrollments(@Param('id') id: string) {
-    return this.coursesService.getEnrollments(id);
+    return this.coursesService.getCourseEnrollments(id);
   }
 
   @Patch(':id/publish')

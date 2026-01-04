@@ -92,4 +92,98 @@ export class CmsService {
   async publishContent(id: string): Promise<any> {
     return this.publish(id);
   }
+
+  // Specific Content Type Methods
+  async createPage(dto: CreateCmsContentDto): Promise<any> {
+    return {
+      success: true,
+      message: 'Page created successfully',
+      data: {
+        id: 'page_' + Date.now(),
+        type: 'page',
+        ...dto
+      }
+    };
+  }
+
+  async updatePage(slug: string, dto: UpdateCmsContentDto): Promise<any> {
+    return {
+      success: true,
+      message: 'Page updated successfully',
+      data: {
+        slug,
+        ...dto,
+        updatedAt: new Date()
+      }
+    };
+  }
+
+  async deletePage(slug: string): Promise<any> {
+    return {
+      success: true,
+      message: 'Page deleted successfully'
+    };
+  }
+
+  async createNews(dto: CreateCmsContentDto): Promise<any> {
+    return {
+      success: true,
+      message: 'News article created successfully',
+      data: {
+        id: 'news_' + Date.now(),
+        type: 'news',
+        ...dto
+      }
+    };
+  }
+
+  async updateNews(id: string, dto: UpdateCmsContentDto): Promise<any> {
+    return {
+      success: true,
+      message: 'News article updated successfully',
+      data: {
+        id,
+        ...dto,
+        updatedAt: new Date()
+      }
+    };
+  }
+
+  async deleteNews(id: string): Promise<any> {
+    return {
+      success: true,
+      message: 'News article deleted successfully'
+    };
+  }
+
+  async createFaq(dto: CreateCmsContentDto): Promise<any> {
+    return {
+      success: true,
+      message: 'FAQ created successfully',
+      data: {
+        id: 'faq_' + Date.now(),
+        type: 'faq',
+        ...dto
+      }
+    };
+  }
+
+  async updateFaq(id: string, dto: UpdateCmsContentDto): Promise<any> {
+    return {
+      success: true,
+      message: 'FAQ updated successfully',
+      data: {
+        id,
+        ...dto,
+        updatedAt: new Date()
+      }
+    };
+  }
+
+  async deleteFaq(id: string): Promise<any> {
+    return {
+      success: true,
+      message: 'FAQ deleted successfully'
+    };
+  }
 }

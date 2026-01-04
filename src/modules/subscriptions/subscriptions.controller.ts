@@ -2,12 +2,13 @@ import {
   Controller,
   Get,
   Post,
-  Body,
-  Param,
   Put,
   Delete,
   Patch,
+  Param,
+  Body,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { SubscriptionsService } from './subscriptions.service';
@@ -17,6 +18,7 @@ import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import { UpgradeSubscriptionDto } from './dto/upgrade-subscription.dto';
 import { UpdateSubscriptionStatusDto } from './dto/update-subscription-status.dto';
 import { ProcessRefundDto } from './dto/process-refund.dto';
+import { OverrideLimitsDto } from './dto/override-limits.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { Permissions } from '../../common/decorators/permissions.decorator';
@@ -27,10 +29,13 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 export class SubscriptionsController {
   constructor(private readonly subscriptionsService: SubscriptionsService) {}
 
-  // Public Routes
+  // Public Routes - Consolidated subscription plans
   @Get('subscription-plans')
-  @ApiOperation({ summary: 'List available plans' })
-  getAvailablePlans() {
+  @ApiOperation({ summary: 'List subscription plans' })
+  getSubscriptionPlans(@Query('admin') admin?: string) {
+    if (admin === 'true') {
+      return this.subscriptionsService.getAllPlans();
+    }
     return this.subscriptionsService.getAvailablePlans();
   }
 
@@ -71,6 +76,25 @@ export class SubscriptionsController {
     return this.subscriptionsService.upgradeSubscription(dto, user.id);
   }
 
+  // Extended Operations - Usage Tracking
+  @Get('subscriptions/my/usage')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('subscriptions:read_own')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Get current usage stats' })
+  getMyUsage(@CurrentUser() user: any) {
+    return this.subscriptionsService.getMyUsage(user.id);
+  }
+
+  @Get('subscriptions/my/limits')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('subscriptions:read_own')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Get plan limits' })
+  getMyLimits(@CurrentUser() user: any) {
+    return this.subscriptionsService.getMyLimits(user.id);
+  }
+
   @Get('payments/my')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('payments:read_own')
@@ -89,16 +113,25 @@ export class SubscriptionsController {
     return this.subscriptionsService.downloadReceipt(id, user.id);
   }
 
-  // Admin Routes
-  @Get('subscription-plans/all')
+  @Get('payments/:id/invoice')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @Permissions('subscription_plans:read')
+  @Permissions('payments:read_own')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'List all plans (including inactive)' })
-  getAllPlans() {
-    return this.subscriptionsService.getAllPlans();
+  @ApiOperation({ summary: 'Generate formal invoice' })
+  generateInvoice(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.subscriptionsService.generateInvoice(id, user.id);
   }
 
+  @Post('payments/:id/resend-receipt')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('payments:read_own')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Resend receipt email' })
+  resendReceipt(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.subscriptionsService.resendReceipt(id, user.id);
+  }
+
+  // Admin Routes
   @Post('subscription-plans')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('subscription_plans:write')
@@ -151,6 +184,15 @@ export class SubscriptionsController {
   @ApiOperation({ summary: 'Update subscription status' })
   updateSubscriptionStatus(@Param('id') id: string, @Body() dto: UpdateSubscriptionStatusDto) {
     return this.subscriptionsService.updateSubscriptionStatus(id, dto);
+  }
+
+  @Post('subscriptions/:id/override-limits')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('subscriptions:write')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Admin override limits' })
+  overrideLimits(@Param('id') id: string, @Body() dto: OverrideLimitsDto) {
+    return this.subscriptionsService.overrideLimits(id, dto);
   }
 
   @Post('payments/:id/refund')

@@ -15,6 +15,8 @@ import { FamilyMembersService } from './family-members.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CreateFamilyMemberDto } from './dto/create-family-member.dto';
 import { UpdateFamilyMemberDto } from './dto/update-family-member.dto';
+import { UpdateGdprConsentDto } from './dto/update-gdpr-consent.dto';
+import { AccountDeletionRequestDto } from './dto/account-deletion-request.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { Permissions } from '../../common/decorators/permissions.decorator';
@@ -73,6 +75,39 @@ export class UsersController {
   @ApiOperation({ summary: 'Delete avatar' })
   deleteAvatar(@CurrentUser() user: any) {
     return this.usersService.deleteAvatar(user.id);
+  }
+
+  // GDPR Compliance Routes
+  @Post('gdpr/consent')
+  @Permissions('users:write_own')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Update consent preferences' })
+  updateGdprConsent(@CurrentUser() user: any, @Body() dto: UpdateGdprConsentDto) {
+    return this.usersService.updateGdprConsent(user.id, dto);
+  }
+
+  @Get('gdpr/data-export')
+  @Permissions('users:read_own')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Request user data export' })
+  requestDataExport(@CurrentUser() user: any) {
+    return this.usersService.requestDataExport(user.id);
+  }
+
+  @Post('gdpr/deletion-request')
+  @Permissions('users:write_own')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Request account deletion' })
+  requestAccountDeletion(@CurrentUser() user: any, @Body() dto: AccountDeletionRequestDto) {
+    return this.usersService.requestAccountDeletion(user.id, dto);
+  }
+
+  @Get('gdpr/consent-history')
+  @Permissions('users:read_own')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'View consent history' })
+  getConsentHistory(@CurrentUser() user: any) {
+    return this.usersService.getConsentHistory(user.id);
   }
 
   // Admin Routes
@@ -138,62 +173,5 @@ export class UsersController {
   @ApiOperation({ summary: 'Get user subscriptions' })
   getUserSubscriptions(@Param('id') id: string) {
     return this.usersService.getUserSubscriptions(id);
-  }
-}
-
-@ApiTags('Family Members')
-@Controller('family-members')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
-export class FamilyMembersController {
-  constructor(private readonly familyMembersService: FamilyMembersService) {}
-
-  // Customer Routes
-  @Get()
-  @Permissions('family_members:read_own')
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'List own family members' })
-  findMy(@CurrentUser() user: any) {
-    return this.familyMembersService.findByUser(user.id);
-  }
-
-  @Post()
-  @Permissions('family_members:write_own')
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Add family member' })
-  create(@Body() dto: CreateFamilyMemberDto, @CurrentUser() user: any) {
-    return this.familyMembersService.create(dto, user.id);
-  }
-
-  @Get(':id')
-  @Permissions('family_members:read_own')
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get family member' })
-  findOne(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.familyMembersService.findOne(id, user.id);
-  }
-
-  @Put(':id')
-  @Permissions('family_members:write_own')
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Update family member' })
-  update(@Param('id') id: string, @Body() dto: UpdateFamilyMemberDto, @CurrentUser() user: any) {
-    return this.familyMembersService.update(id, dto, user.id);
-  }
-
-  @Delete(':id')
-  @Permissions('family_members:delete_own')
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Delete family member' })
-  remove(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.familyMembersService.remove(id, user.id);
-  }
-
-  // Admin Routes
-  @Get('user/:userId')
-  @Permissions('family_members:read')
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'List user\'s family members' })
-  findByUser(@Param('userId') userId: string) {
-    return this.familyMembersService.findByUser(userId);
   }
 }

@@ -26,4 +26,40 @@ export class AuditService {
   async findByResource(type: string, id: string): Promise<any> {
     return { success: true, data: [] };
   }
+
+  // Extended Operations - Advanced Filtering
+  async searchAuditLogs(filters: {
+    userId?: string;
+    action?: string;
+    resource?: string;
+    startDate?: Date;
+    endDate?: Date;
+  }): Promise<any> {
+    return {
+      success: true,
+      data: {
+        filters,
+        results: [],
+        totalCount: 0,
+        searchedAt: new Date()
+      }
+    };
+  }
+
+  async exportAuditLogs(options: {
+    format: string;
+    startDate?: Date;
+    endDate?: Date;
+  }): Promise<any> {
+    return {
+      success: true,
+      message: 'Audit logs export prepared',
+      data: {
+        format: options.format,
+        downloadUrl: `/api/v1/audit-logs/export.${options.format}`,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+        recordCount: 0
+      }
+    };
+  }
 }

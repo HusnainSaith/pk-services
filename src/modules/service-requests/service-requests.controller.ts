@@ -16,9 +16,10 @@ import { CreateServiceRequestDto } from './dto/create-service-request.dto';
 import { UpdateServiceRequestDto } from './dto/update-service-request.dto';
 import { CreateServiceTypeDto } from './dto/create-service-type.dto';
 import { UpdateServiceTypeDto } from './dto/update-service-type.dto';
-import { UpdateServiceRequestStatusDto } from './dto/update-status.dto';
+import { UpdateStatusDto } from './dto/update-status.dto';
 import { AssignOperatorDto } from './dto/assign-operator.dto';
 import { UpdatePriorityDto } from './dto/update-priority.dto';
+import { ReuploadDocumentDto } from './dto/reupload-document.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { Permissions } from '../../common/decorators/permissions.decorator';
@@ -48,6 +49,12 @@ export class ServiceTypesController {
     return this.serviceTypesService.getSchema(id);
   }
 
+  @Get(':id/required-documents')
+  @ApiOperation({ summary: 'Get required document list' })
+  getRequiredDocuments(@Param('id') id: string) {
+    return this.serviceTypesService.getRequiredDocuments(id);
+  }
+
   // Admin Routes
   @Post()
   @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -65,6 +72,15 @@ export class ServiceTypesController {
   @ApiOperation({ summary: 'Update service type' })
   update(@Param('id') id: string, @Body() dto: UpdateServiceTypeDto) {
     return this.serviceTypesService.update(id, dto);
+  }
+
+  @Put(':id/schema')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('service_types:write')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Update form schema' })
+  updateSchema(@Param('id') id: string, @Body() schema: any) {
+    return this.serviceTypesService.updateSchema(id, schema);
   }
 
   @Delete(':id')
@@ -106,7 +122,7 @@ export class ServiceRequestsController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Create service request' })
   create(@Body() dto: CreateServiceRequestDto, @CurrentUser() user: any) {
-    return this.serviceRequestsService.create(dto);
+    return this.serviceRequestsService.create(dto, user.id);
   }
 
   @Get(':id')
@@ -114,7 +130,7 @@ export class ServiceRequestsController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get request details' })
   findOne(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.serviceRequestsService.findOne(id);
+    return this.serviceRequestsService.findOne(id, user.id);
   }
 
   @Put(':id')
@@ -122,7 +138,7 @@ export class ServiceRequestsController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Update draft request' })
   update(@Param('id') id: string, @Body() dto: UpdateServiceRequestDto, @CurrentUser() user: any) {
-    return this.serviceRequestsService.update(id, dto);
+    return this.serviceRequestsService.update(id, dto, user.id);
   }
 
   @Post(':id/submit')
@@ -157,6 +173,28 @@ export class ServiceRequestsController {
     return this.serviceRequestsService.addNote(id, dto, user.id);
   }
 
+  // Extended Document Workflow
+  @Get(':id/missing-documents')
+  @Permissions('service_requests:read_own')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'List all missing document requests' })
+  getMissingDocuments(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.serviceRequestsService.getMissingDocuments(id, user.id);
+  }
+
+  @Post(':id/documents/:documentId/reupload')
+  @Permissions('service_requests:write_own')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Track reupload against specific document request' })
+  reuploadDocument(
+    @Param('id') id: string, 
+    @Param('documentId') documentId: string, 
+    @Body() dto: ReuploadDocumentDto,
+    @CurrentUser() user: any
+  ) {
+    return this.serviceRequestsService.reuploadDocument(id, documentId, dto, user.id);
+  }
+
   // Admin/Operator Routes
   @Get()
   @Permissions('service_requests:read')
@@ -178,8 +216,8 @@ export class ServiceRequestsController {
   @Permissions('service_requests:write')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Update status' })
-  updateStatus(@Param('id') id: string, @Body() dto: UpdateServiceRequestStatusDto) {
-    return this.serviceRequestsService.updateStatus(id, dto, 'admin');
+  updateStatus(@Param('id') id: string, @Body() dto: UpdateStatusDto, @CurrentUser() user: any) {
+    return this.serviceRequestsService.updateStatus(id, dto, user.id);
   }
 
   @Post(':id/assign')

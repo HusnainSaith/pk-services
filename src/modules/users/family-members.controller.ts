@@ -7,11 +7,15 @@ import {
   Put,
   Delete,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { FamilyMembersService } from './family-members.service';
 import { CreateFamilyMemberDto } from './dto/create-family-member.dto';
 import { UpdateFamilyMemberDto } from './dto/update-family-member.dto';
+import { UploadDocumentDto } from '../documents/dto/upload-document.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { Permissions } from '../../common/decorators/permissions.decorator';
@@ -62,6 +66,30 @@ export class FamilyMembersController {
   @ApiOperation({ summary: 'Delete family member' })
   remove(@Param('id') id: string, @CurrentUser() user: any) {
     return this.familyMembersService.remove(id, user.id);
+  }
+
+  // Extended Operations - Document Management
+  @Get(':id/documents')
+  @Permissions('family_members:read_own')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Get documents for family member' })
+  getFamilyMemberDocuments(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.familyMembersService.getFamilyMemberDocuments(id, user.id);
+  }
+
+  @Post(':id/documents')
+  @Permissions('family_members:write_own')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Upload document for family member' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadFamilyMemberDocument(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: UploadDocumentDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.familyMembersService.uploadFamilyMemberDocument(id, file, dto, user.id);
   }
 
   // Admin Routes

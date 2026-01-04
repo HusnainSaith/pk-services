@@ -51,6 +51,9 @@ async function bootstrap() {
   app.useGlobalPipes(new GlobalValidationPipe());
   app.useGlobalFilters(new GlobalExceptionFilter());
 
+  // // Global prefix
+  // app.setGlobalPrefix('api/v1');
+
   // Swagger documentation
   const config = new DocumentBuilder()
     .setTitle('PK SERVIZI API')
@@ -68,9 +71,6 @@ async function bootstrap() {
       persistAuthorization: true,
     },
   });
-
-  // // Global prefix
-  // app.setGlobalPrefix('api/v1');
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
