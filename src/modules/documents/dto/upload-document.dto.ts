@@ -2,15 +2,18 @@ import { IsString, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UploadDocumentDto {
-  @ApiProperty()
-  @IsString()
-  requestId: string;
+  @ApiProperty({ type: 'string', format: 'binary', description: 'Document file' })
+  file: any;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Service request ID', name: 'serviceRequestId' })
+  @IsString()
+  serviceRequestId: string;
+
+  @ApiProperty({ description: 'Document type', name: 'documentType' })
   @IsString()
   documentType: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, description: 'Document description' })
   @IsOptional()
   @IsString()
   description?: string;

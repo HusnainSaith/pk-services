@@ -167,4 +167,40 @@ export class CreateUserDto {
   @IsOptional()
   @IsUUID(4, { message: 'Role ID must be a valid UUID' })
   roleId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Nationality',
+    example: 'IT',
+  })
+  @IsOptional()
+  @IsString({ message: 'Nationality must be a string' })
+  @MaxLength(100, { message: 'Nationality cannot exceed 100 characters' })
+  nationality?: string;
+
+  @ApiPropertyOptional({
+    description: 'Marital status',
+    example: 'MARRIED',
+  })
+  @IsOptional()
+  @IsString({ message: 'Marital status must be a string' })
+  @MaxLength(50, { message: 'Marital status cannot exceed 50 characters' })
+  maritalStatus?: string;
+
+  @ApiPropertyOptional({
+    description: 'Education level',
+    example: 'BACHELOR',
+  })
+  @IsOptional()
+  @IsString({ message: 'Education level must be a string' })
+  @MaxLength(100, { message: 'Education level cannot exceed 100 characters' })
+  educationLevel?: string;
+
+  @ApiPropertyOptional({
+    description: 'Employment status',
+    example: 'EMPLOYED',
+  })
+  @IsOptional()
+  @IsString({ message: 'Employment status must be a string' })
+  @MaxLength(100, { message: 'Employment status cannot exceed 100 characters' })
+  employmentStatus?: string;
 }

@@ -7,11 +7,12 @@ import { UserSubscriptionsService } from './user-subscriptions.service';
 import { SubscriptionPlan } from './entities/subscription-plan.entity';
 import { UserSubscription } from './entities/user-subscription.entity';
 import { User } from '../users/entities/user.entity';
+import { Payment } from '../payments/entities/payment.entity';
 import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([SubscriptionPlan, UserSubscription, User]),
+    TypeOrmModule.forFeature([SubscriptionPlan, UserSubscription, User, Payment]),
     UsersModule,
   ],
   controllers: [SubscriptionsController],

@@ -18,10 +18,13 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
+import { AwsModule } from './modules/aws/aws.module';
 
 import databaseConfig from './config/database.config';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { ResponseInterceptor } from './common/interceptor/response.interceptor';
+import { StandardResponseInterceptor } from './common/interceptors/standard-response.interceptor';
+import { HealthController } from './health.controller';
 
 @Module({
   imports: [
@@ -51,6 +54,9 @@ import { ResponseInterceptor } from './common/interceptor/response.interceptor';
       }),
     }),
 
+    // AWS services
+    AwsModule,
+
     // Core modules
     AuthModule,
     UsersModule,
@@ -69,6 +75,7 @@ import { ResponseInterceptor } from './common/interceptor/response.interceptor';
     AuditModule,
     WebhooksModule,
   ],
+  controllers: [HealthController],
   providers: [
     {
       provide: APP_GUARD,
@@ -76,7 +83,7 @@ import { ResponseInterceptor } from './common/interceptor/response.interceptor';
     },
     {
       provide: APP_INTERCEPTOR,
-      useClass: ResponseInterceptor,
+      useClass: StandardResponseInterceptor,
     },
     {
       provide: APP_FILTER,

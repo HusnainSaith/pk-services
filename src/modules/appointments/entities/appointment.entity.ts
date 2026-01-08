@@ -42,8 +42,29 @@ export class Appointment {
   @Column({ length: 255, nullable: true })
   location: string;
 
-  @Column({ type: 'text', nullable: true })
-  notes: string;
+  @Column({ type: 'jsonb', nullable: true, default: {} })
+  notes: any;
+
+  @Column({ default: false, name: 'user_confirmed' })
+  userConfirmed: boolean;
+
+  @Column({ nullable: true, name: 'user_confirmed_at' })
+  userConfirmedAt: Date;
+
+  @Column({ default: false, name: 'operator_confirmed' })
+  operatorConfirmed: boolean;
+
+  @Column({ nullable: true, name: 'operator_confirmed_at' })
+  operatorConfirmedAt: Date;
+
+  @Column({ nullable: true, name: 'cancelled_at' })
+  cancelledAt: Date;
+
+  @Column({ nullable: true, name: 'completed_at' })
+  completedAt: Date;
+
+  @Column({ default: 0, name: 'rescheduled_count' })
+  rescheduledCount: number;
 
   @ManyToOne(() => User, (user) => user.appointments)
   @JoinColumn({ name: 'user_id' })

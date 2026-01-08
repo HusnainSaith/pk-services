@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: pk-servizi-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: pk_servizi
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: .
+    container_name: pk-servizi-api
+    depends_on:
+      - postgres
+    environment:
+      DB_HOST: postgres
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: pk_servizi
+      DB_PORT: 5432
+      JWT_SECRET: dev_jwt_secret_change_in_production_please
+      JWT_EXPIRES_IN: 15m
+      JWT_REFRESH_SECRET: dev_refresh_secret_change_in_production_please
+      JWT_REFRESH_EXPIRES_IN: 7d
+      FRONTEND_URL: http://localhost:3001
+      AWS_S3_ENABLED: false
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./src:/app/src
+      - /app/node_modules
+
+volumes:
+  postgres_data:

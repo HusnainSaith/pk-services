@@ -2,22 +2,35 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
+import { UserProfile } from './entities/user-profile.entity';
 import { Role } from '../roles/entities/role.entity';
+import { StorageService } from '../../common/services/storage.service';
+import { AwsS3FolderService } from '../aws/services/aws-s3-folder.service';
+import { AwsS3UploadService } from '../../common/services/aws-s3-upload.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(UserProfile)
+    private userProfileRepository: Repository<UserProfile>,
     @InjectRepository(Role)
     private roleRepository: Repository<Role>,
+    private storageService: StorageService,
+    private awsS3FolderService: AwsS3FolderService,
+    private awsS3UploadService: AwsS3UploadService,
   ) {}
 
   async create(dto: CreateUserDto) {
@@ -36,6 +49,21 @@ export class UsersService {
     });
 
     const savedUser = await this.userRepository.save(user);
+
+    // Create S3 folder structure for new user
+    try {
+      await this.awsS3FolderService.createUserFolderStructure(savedUser.id);
+      this.logger.log(
+        `S3 folder structure created for user: ${savedUser.id}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to create S3 folder structure for user ${savedUser.id}: ${error.message}`,
+      );
+      // Don't fail user creation if S3 fails - log it but continue
+      // User can still function without S3 folders (they'll be created on first upload)
+    }
+
     return {
       success: true,
       message: 'User created successfully',
@@ -147,54 +175,401 @@ export class UsersService {
   }
 
   async remove(id: string) {
-    const user = await this.userRepository.findOne({ where: { id } });
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
+    // Use a transaction to ensure all deletions succeed or fail together
+    return await this.userRepository.manager.transaction(async (transactionalEntityManager) => {
+      // Find user with all relations
+      const user = await transactionalEntityManager.findOne(User, { 
+        where: { id },
+        relations: [
+          'profile', 
+          'familyMembers', 
+          'refreshTokens', 
+          'subscriptions',
+        ],
+      });
 
-    await this.userRepository.remove(user);
-    return {
-      success: true,
-      message: 'User deleted successfully',
-    };
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      this.logger.log(`Starting deletion process for user: ${id}`);
+
+      // Delete related entities in the correct order to avoid FK constraints
+      // Order matters: delete child entities before parent entities
+
+      // 1. Delete user profile (has FK to user)
+      if (user.profile) {
+        await transactionalEntityManager.remove(user.profile);
+        this.logger.log(`Deleted profile for user: ${id}`);
+      }
+
+      // 2. Delete family members (has CASCADE configured, but we'll be explicit)
+      if (user.familyMembers && user.familyMembers.length > 0) {
+        await transactionalEntityManager.remove(user.familyMembers);
+        this.logger.log(`Deleted ${user.familyMembers.length} family member(s) for user: ${id}`);
+      }
+
+      // 3. Delete refresh tokens
+      if (user.refreshTokens && user.refreshTokens.length > 0) {
+        await transactionalEntityManager.remove(user.refreshTokens);
+        this.logger.log(`Deleted ${user.refreshTokens.length} refresh token(s) for user: ${id}`);
+      }
+
+      // 4. Delete user subscriptions and their related payments
+      if (user.subscriptions && user.subscriptions.length > 0) {
+        // First delete payments associated with these subscriptions
+        for (const subscription of user.subscriptions) {
+          await transactionalEntityManager
+            .createQueryBuilder()
+            .delete()
+            .from('payments')
+            .where('subscription_id = :subscriptionId', { subscriptionId: subscription.id })
+            .execute();
+        }
+        
+        await transactionalEntityManager.remove(user.subscriptions);
+        this.logger.log(`Deleted ${user.subscriptions.length} subscription(s) for user: ${id}`);
+      }
+
+      // 5. Delete other related entities using query builder for efficiency
+      // Delete service requests (both created and assigned)
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .delete()
+        .from('request_status_history')
+        .where('changed_by_id = :userId', { userId: id })
+        .execute();
+
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .delete()
+        .from('service_requests')
+        .where('user_id = :userId OR assigned_operator_id = :userId', { userId: id })
+        .execute();
+
+      // Delete appointments
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .delete()
+        .from('appointments')
+        .where('user_id = :userId OR operator_id = :userId', { userId: id })
+        .execute();
+
+      // Delete notifications
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .delete()
+        .from('notifications')
+        .where('user_id = :userId', { userId: id })
+        .execute();
+
+      // Delete course enrollments
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .delete()
+        .from('course_enrollments')
+        .where('user_id = :userId', { userId: id })
+        .execute();
+
+      // Delete CMS content authored by user
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .delete()
+        .from('cms_content')
+        .where('author_id = :userId', { userId: id })
+        .execute();
+
+      // Delete audit logs
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .delete()
+        .from('audit_logs')
+        .where('user_id = :userId', { userId: id })
+        .execute();
+
+      // Delete user permissions
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .delete()
+        .from('user_permissions')
+        .where('user_id = :userId', { userId: id })
+        .execute();
+
+      // Delete payments made by user (not associated with subscriptions)
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .delete()
+        .from('payments')
+        .where('user_id = :userId', { userId: id })
+        .execute();
+
+      // Finally, delete the user
+      await transactionalEntityManager.remove(user);
+      
+      this.logger.log(`Successfully deleted user and all related data: ${id}`);
+      
+      return {
+        success: true,
+        message: 'User deleted successfully',
+      };
+    });
   }
 
   // Profile methods
   async getProfile(userId: string) {
-    return this.findOne(userId);
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['role', 'profile'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Parse role permissions if stored as string
+    if (user.role && typeof user.role.permissions === 'string') {
+      try {
+        user.role = {
+          ...user.role,
+          permissions: JSON.parse(user.role.permissions),
+        } as any;
+      } catch (e) {
+        user.role = {
+          ...user.role,
+          permissions: [],
+        } as any;
+      }
+    }
+
+    // Remove sensitive data
+    delete user.password;
+
+    return {
+      success: true,
+      message: 'User retrieved successfully',
+      data: user,
+    };
   }
 
   async updateProfile(userId: string, dto: UpdateUserDto) {
-    return this.update(userId, dto);
+    const user = await this.userRepository.findOne({ 
+      where: { id: userId },
+      relations: ['profile'],
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (dto.email && dto.email !== user.email) {
+      const existingUser = await this.userRepository.findOne({
+        where: { email: dto.email },
+      });
+      if (existingUser) {
+        throw new ConflictException('Email already exists');
+      }
+    }
+
+    // Separate extended profile fields from user fields
+    const extendedProfileFields = ['nationality', 'maritalStatus', 'educationLevel', 'employmentStatus'];
+    const userUpdateData = {};
+    const profileUpdateData = {};
+
+    for (const key in dto) {
+      if (dto[key] !== undefined) {
+        if (extendedProfileFields.includes(key)) {
+          // Map educationLevel to education in profile, employmentStatus to occupation
+          if (key === 'educationLevel') {
+            profileUpdateData['education'] = dto[key];
+          } else if (key === 'employmentStatus') {
+            profileUpdateData['occupation'] = dto[key];
+          } else {
+            profileUpdateData[key] = dto[key];
+          }
+        } else {
+          userUpdateData[key] = dto[key];
+        }
+      }
+    }
+
+    // Merge user updates
+    Object.assign(user, userUpdateData);
+
+    // Auto-populate consent dates when consent is set to true
+    if (dto.gdprConsent === true) {
+      user.gdprConsentDate = new Date();
+    }
+
+    if (dto.privacyConsent === true) {
+      user.privacyConsentDate = new Date();
+    }
+
+    // Default privacy consent to true if not explicitly set
+    if (dto.privacyConsent === undefined && !user.privacyConsent) {
+      user.privacyConsent = true;
+      user.privacyConsentDate = new Date();
+    }
+
+    // Save user first
+    const updatedUser = await this.userRepository.save(user);
+
+    // Update or create extended profile if there are profile fields to update
+    if (Object.keys(profileUpdateData).length > 0) {
+      if (user.profile) {
+        // Update existing profile
+        Object.assign(user.profile, profileUpdateData);
+        await this.userRepository.save(user);
+      } else {
+        // Create new profile if it doesn't exist
+        const newProfile = this.userProfileRepository.create({
+          userId: userId,
+          ...profileUpdateData,
+        });
+        await this.userProfileRepository.save(newProfile);
+        updatedUser.profile = newProfile;
+      }
+    }
+
+    // Remove sensitive data
+    delete updatedUser.password;
+
+    return {
+      success: true,
+      message: 'User updated successfully',
+      data: updatedUser,
+    };
   }
 
   async getExtendedProfile(userId: string) {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['profile'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
     return {
       success: true,
       message: 'Extended profile retrieved',
-      data: {},
+      data: user.profile || {},
     };
   }
 
   async updateExtendedProfile(userId: string, dto: any) {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['profile'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Create or update profile
+    if (user.profile) {
+      Object.assign(user.profile, dto);
+      await this.userRepository.save(user);
+    }
+
     return {
       success: true,
       message: 'Extended profile updated',
+      data: user.profile || {},
     };
   }
 
-  async uploadAvatar(userId: string, dto: any) {
-    return {
-      success: true,
-      message: 'Avatar uploaded',
-    };
+  async uploadAvatar(userId: string, file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+
+    const isValidType = file.mimetype === 'image/jpeg' || 
+                       file.mimetype === 'image/png' || 
+                       file.mimetype === 'image/webp';
+    
+    if (!isValidType) {
+      throw new BadRequestException('Invalid file type. Allowed: JPEG, PNG, WebP');
+    }
+
+    if (file.size > 5242880) {
+      throw new BadRequestException('File size exceeds 5MB limit');
+    }
+
+    try {
+      // Upload to profile folder using the AWS S3 upload service (organized structure)
+      const { publicUrl } = await this.awsS3UploadService.uploadProfileImage(userId, file);
+
+      // Get current avatar URL for cleanup
+      const existingProfile = await this.userProfileRepository.findOne({
+        where: { userId },
+        select: ['avatarUrl'], // Only select what we need
+      });
+
+      // Delete old avatar in background (don't await)
+      if (existingProfile?.avatarUrl) {
+        // Extract S3 key: remove bucket name from URL
+        // URL format: https://s3.region.amazonaws.com/bucket-name/users/userId/profile/filename.png
+        // S3 Key should be: users/userId/profile/filename.png
+        const urlParts = existingProfile.avatarUrl.split('/');
+        const bucketNameIndex = urlParts.indexOf(this.storageService.getBucketName());
+        if (bucketNameIndex !== -1 && bucketNameIndex + 1 < urlParts.length) {
+          const s3Key = urlParts.slice(bucketNameIndex + 1).join('/');
+          this.storageService.deleteFile(s3Key).catch(err => {
+            this.logger.debug(`Background avatar deletion failed: ${err.message}`);
+          });
+        }
+      }
+
+      // Single update query instead of find + save pattern
+      const result = await this.userProfileRepository.upsert(
+        { userId, avatarUrl: publicUrl },
+        ['userId']
+      );
+
+      return {
+        success: true,
+        message: 'Avatar uploaded successfully',
+        data: { avatarUrl: publicUrl },
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException('Failed to upload avatar');
+    }
   }
 
   async deleteAvatar(userId: string) {
-    return {
-      success: true,
-      message: 'Avatar deleted',
-    };
+    const profile = await this.userProfileRepository.findOne({
+      where: { userId },
+    });
+
+    if (!profile || !profile.avatarUrl) {
+      throw new NotFoundException('Avatar not found');
+    }
+
+    try {
+      // Extract path from URL
+      const oldPath = profile.avatarUrl.split('.amazonaws.com/')[1];
+      if (oldPath) {
+        await this.storageService.deleteFile(oldPath);
+      }
+
+      // Remove avatar URL from profile
+      profile.avatarUrl = null;
+      await this.userProfileRepository.save(profile);
+
+      return {
+        success: true,
+        message: 'Avatar deleted successfully',
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException('Failed to delete avatar');
+    }
   }
 
   async activate(id: string) {
@@ -214,33 +589,76 @@ export class UsersService {
   }
 
   async getUserActivity(id: string) {
+    const activities = await this.userRepository.find({
+      where: { id },
+      relations: ['serviceRequests', 'appointments'],
+    });
     return {
       success: true,
       message: 'User activity retrieved',
-      data: [],
+      data: activities,
     };
   }
 
   async getUserSubscriptions(id: string) {
+    const userWithSubscriptions = await this.userRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.subscriptions', 'subscription')
+      .leftJoinAndSelect('subscription.plan', 'plan')
+      .where('user.id = :id', { id })
+      .getOne();
+    
+    if (!userWithSubscriptions) {
+      throw new NotFoundException('User not found');
+    }
+
     return {
       success: true,
       message: 'User subscriptions retrieved',
-      data: [],
+      data: userWithSubscriptions.subscriptions || [],
     };
   }
 
   // GDPR Compliance Methods
   async updateGdprConsent(userId: string, dto: any) {
-    await this.userRepository.update(userId, {
-      gdprConsent: dto.gdprConsent,
-      gdprConsentDate: new Date(),
-      privacyConsent: dto.privacyConsent,
-      privacyConsentDate: new Date(),
-    });
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Update consent flags and auto-populate dates
+    if (dto.gdprConsent !== undefined) {
+      user.gdprConsent = dto.gdprConsent;
+      if (dto.gdprConsent === true) {
+        user.gdprConsentDate = new Date();
+      }
+    }
+
+    if (dto.privacyConsent !== undefined) {
+      user.privacyConsent = dto.privacyConsent;
+      if (dto.privacyConsent === true) {
+        user.privacyConsentDate = new Date();
+      }
+    }
+
+    // Default privacy consent to true
+    if (!user.privacyConsent) {
+      user.privacyConsent = true;
+      user.privacyConsentDate = new Date();
+    }
+
+    await this.userRepository.save(user);
 
     return {
       success: true,
       message: 'Consent preferences updated',
+      data: {
+        gdprConsent: user.gdprConsent,
+        gdprConsentDate: user.gdprConsentDate,
+        privacyConsent: user.privacyConsent,
+        privacyConsentDate: user.privacyConsentDate,
+      },
     };
   }
 
@@ -267,10 +685,53 @@ export class UsersService {
   }
 
   async getConsentHistory(userId: string) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Build consent history from user's consent dates
+    const consentHistory = [];
+
+    // Add GDPR consent record
+    if (user.gdprConsentDate) {
+      consentHistory.push({
+        type: 'GDPR Data Processing',
+        consent: user.gdprConsent,
+        date: user.gdprConsentDate,
+        timestamp: user.gdprConsentDate.toISOString(),
+      });
+    }
+
+    // Add Privacy consent record
+    if (user.privacyConsentDate) {
+      consentHistory.push({
+        type: 'Privacy Policy',
+        consent: user.privacyConsent,
+        date: user.privacyConsentDate,
+        timestamp: user.privacyConsentDate.toISOString(),
+      });
+    }
+
+    // Sort by date descending (most recent first)
+    consentHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
     return {
       success: true,
       message: 'Consent history retrieved',
-      data: [],
+      data: consentHistory.length > 0 ? consentHistory : [
+        {
+          type: 'GDPR Data Processing',
+          consent: user.gdprConsent || false,
+          date: user.gdprConsentDate || null,
+        },
+        {
+          type: 'Privacy Policy',
+          consent: user.privacyConsent || false,
+          date: user.privacyConsentDate || null,
+        },
+      ],
     };
   }
 }

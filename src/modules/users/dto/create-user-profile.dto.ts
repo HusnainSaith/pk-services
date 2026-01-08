@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsBoolean, IsDateString, IsDecimal, MaxLength } from 'class-validator';
+import { IsOptional, IsString, IsBoolean, IsDateString, IsNumber, MaxLength, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateUserProfileDto {
@@ -72,7 +72,8 @@ export class CreateUserProfileDto {
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @IsDecimal()
+  @IsNumber()
+  @Min(0)
   monthlyIncome?: number;
 
   @ApiProperty({ required: false })

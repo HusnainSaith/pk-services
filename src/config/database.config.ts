@@ -8,9 +8,9 @@ const databaseConfig = (): TypeOrmModuleOptions => ({
   type: 'postgres',
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '5432', 10),
-  username: process.env.DB_USERNAME || 'postgres',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_DATABASE || 'postgres',
+  username: process.env.DB_USER || process.env.DB_USERNAME || 'postgres',
+  password: String(process.env.DB_PASSWORD || ''),
+  database: process.env.DB_NAME || process.env.DB_DATABASE || 'postgres',
 
   entities: [__dirname + '/../modules/*/entities/*.entity.{ts,js}'],
 

@@ -1,29 +1,38 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { BaseService } from '../../common/services/base.service';
 import { Payment } from './entities/payment.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
 
-@Injectable()
-export class PaymentsService {
+/**
+ * PaymentsService
+ * Handles payment management, Stripe integration, and payment processing
+ * Extends BaseService for CRUD operations
+ */
+export class PaymentsService extends BaseService<Payment, CreatePaymentDto, UpdatePaymentDto> {
   constructor(
     @InjectRepository(Payment)
-    private paymentRepository: Repository<Payment>,
-  ) {}
-
-  async create(createPaymentDto: CreatePaymentDto): Promise<Payment> {
-    const payment = this.paymentRepository.create({
-      status: 'pending',
-      ...createPaymentDto,
-    });
-    return this.paymentRepository.save(payment);
+    protected readonly paymentRepository: Repository<Payment>,
+  ) {
+    super(paymentRepository);
   }
 
+  /**
+   * Create payment with default status
+   */
+  async create(createPaymentDto: CreatePaymentDto): Promise<Payment> {
+    const dto: any = {
+      status: 'pending',
+      ...createPaymentDto,
+    };
+    return super.create(dto);
+  }
+
+  /**
+   * Find all payments (wrapper for BaseService)
+   */
   async findAll(page = 1, limit = 10) {
     const [data, total] = await this.paymentRepository.findAndCount({
       skip: (page - 1) * limit,
@@ -40,6 +49,9 @@ export class PaymentsService {
     };
   }
 
+  /**
+   * Find payments for a user with pagination
+   */
   async findByUser(userId: string, page = 1, limit = 10) {
     const [data, total] = await this.paymentRepository.findAndCount({
       where: { userId },
@@ -57,19 +69,9 @@ export class PaymentsService {
     };
   }
 
-  async findOne(id: string): Promise<Payment> {
-    const payment = await this.paymentRepository.findOne({
-      where: { id },
-      relations: ['user', 'serviceRequest'],
-    });
-
-    if (!payment) {
-      throw new NotFoundException(`Payment with ID ${id} not found`);
-    }
-
-    return payment;
-  }
-
+  /**
+   * Find payment by Stripe transaction ID
+   */
   async findByTransactionId(transactionId: string): Promise<Payment> {
     const payment = await this.paymentRepository.findOne({
       where: { stripePaymentIntentId: transactionId },
@@ -77,20 +79,21 @@ export class PaymentsService {
     });
 
     if (!payment) {
-      throw new NotFoundException(
-        `Payment with transaction ID ${transactionId} not found`,
-      );
+      throw new Error(`Payment with transaction ID ${transactionId} not found`);
     }
 
     return payment;
   }
 
+  /**
+   * Update payment status with transaction tracking
+   */
   async updateStatus(
     id: string,
     status: string,
     transactionId?: string,
   ): Promise<Payment> {
-    await this.findOne(id);
+    await this.findById(id);
 
     const updateData: any = { status };
     if (transactionId) {
@@ -101,17 +104,12 @@ export class PaymentsService {
     }
 
     await this.paymentRepository.update(id, updateData);
-    return this.findOne(id);
+    return this.findById(id);
   }
 
-  async update(
-    id: string,
-    updatePaymentDto: UpdatePaymentDto,
-  ): Promise<Payment> {
-    await this.paymentRepository.update(id, updatePaymentDto);
-    return this.findOne(id);
-  }
-
+  /**
+   * Get payment statistics
+   */
   async getPaymentStats(userId?: string) {
     const whereClause = userId ? { userId } : {};
 
@@ -144,6 +142,9 @@ export class PaymentsService {
     };
   }
 
+  /**
+   * Record Stripe payment
+   */
   async recordStripePayment(data: {
     stripeInvoiceId: string;
     amount: number;
@@ -161,8 +162,11 @@ export class PaymentsService {
     return this.paymentRepository.save(payment);
   }
 
+  /**
+   * Process refund for completed payment
+   */
   async processRefund(id: string, refundAmount?: number): Promise<Payment> {
-    const payment = await this.findOne(id);
+    const payment = await this.findById(id);
 
     if (payment.status !== 'completed') {
       throw new BadRequestException('Can only refund completed payments');
@@ -177,66 +181,58 @@ export class PaymentsService {
     }
 
     payment.status = 'refunded';
-
     return this.paymentRepository.save(payment);
   }
 
-  // Extended Operations - Invoice/Receipt Generation
+  /**
+   * Generate receipt for payment
+   */
   async downloadReceipt(id: string, userId: string): Promise<any> {
-    const payment = await this.findOne(id);
+    const payment = await this.findById(id);
     
-    // Verify user owns this payment
     if (payment.userId !== userId) {
-      throw new NotFoundException('Payment not found');
+      throw new Error('Payment not found');
     }
 
     return {
-      success: true,
-      message: 'Receipt generated',
-      data: {
-        paymentId: id,
-        receiptUrl: `/api/v1/payments/${id}/receipt.pdf`,
-        generatedAt: new Date()
-      }
+      paymentId: id,
+      receiptUrl: `/api/v1/payments/${id}/receipt.pdf`,
+      generatedAt: new Date()
     };
   }
 
+  /**
+   * Generate invoice for payment
+   */
   async generateInvoice(id: string, userId: string): Promise<any> {
-    const payment = await this.findOne(id);
+    const payment = await this.findById(id);
     
-    // Verify user owns this payment
     if (payment.userId !== userId) {
-      throw new NotFoundException('Payment not found');
+      throw new Error('Payment not found');
     }
 
     return {
-      success: true,
-      message: 'Invoice generated',
-      data: {
-        paymentId: id,
-        invoiceUrl: `/api/v1/payments/${id}/invoice.pdf`,
-        invoiceNumber: `INV-${Date.now()}`,
-        generatedAt: new Date()
-      }
+      paymentId: id,
+      invoiceUrl: `/api/v1/payments/${id}/invoice.pdf`,
+      invoiceNumber: `INV-${Date.now()}`,
+      generatedAt: new Date()
     };
   }
 
+  /**
+   * Resend receipt email
+   */
   async resendReceipt(id: string, userId: string): Promise<any> {
-    const payment = await this.findOne(id);
+    const payment = await this.findById(id);
     
-    // Verify user owns this payment
     if (payment.userId !== userId) {
-      throw new NotFoundException('Payment not found');
+      throw new Error('Payment not found');
     }
 
     return {
-      success: true,
-      message: 'Receipt email sent',
-      data: {
-        paymentId: id,
-        sentAt: new Date(),
-        emailAddress: 'user@example.com' // Would get from user entity
-      }
+      paymentId: id,
+      sentAt: new Date(),
+      emailAddress: 'user@example.com'
     };
   }
 }

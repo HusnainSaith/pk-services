@@ -37,9 +37,37 @@ export class PermissionsGuard implements CanActivate {
     }
 
     try {
-      // Temporary: Allow customer role to access their own resources
-      if (user.role?.name === 'customer') {
-        const ownResourcePermissions = [
+      // Get user with role
+      const userWithRole = await this.userRepository.findOne({
+        where: { id: user.id },
+        relations: ['role'],
+      });
+
+      if (!userWithRole || !userWithRole.role) {
+        throw new ForbiddenException('User role not found');
+      }
+
+      // Give admin full access to everything
+      if (userWithRole.role.name === 'admin') {
+        return true;
+      }
+
+      // Parse permissions from role JSON
+      let userPermissions: string[] = [];
+      if (userWithRole.role.permissions) {
+        try {
+          const rolePermissions = JSON.parse(userWithRole.role.permissions);
+          userPermissions = rolePermissions.flatMap((perm: any) => 
+            perm.actions.map((action: string) => `${perm.resource}:${action}`)
+          );
+        } catch (e) {
+          console.error('Error parsing role permissions:', e);
+        }
+      }
+
+      // Add hardcoded customer permissions for backward compatibility
+      if (userWithRole.role.name === 'customer') {
+        const customerPermissions = [
           'users:read_own',
           'users:write_own', 
           'family_members:read_own',
@@ -55,45 +83,12 @@ export class PermissionsGuard implements CanActivate {
           'courses:read_own',
           'courses:write_own'
         ];
-        
-        const hasPermission = requiredPermissions.some(permission => 
-          ownResourcePermissions.includes(permission)
-        );
-        
-        if (hasPermission) {
-          return true;
-        }
+        userPermissions = [...userPermissions, ...customerPermissions];
       }
 
-      const userPermissions = await this.userRepository.manager.query(
-        `
-        SELECT DISTINCT p.name 
-        FROM permissions p
-        WHERE p.id IN (
-          -- Permissions from user's role
-          SELECT rp.permission_id 
-          FROM role_permissions rp
-          JOIN users u ON u.role_id = rp.role_id
-          WHERE u.id = $1
-          
-          UNION
-          
-          -- Direct user permissions
-          SELECT up.permission_id
-          FROM user_permissions up
-          WHERE up.user_id = $1
-        )
-        `,
-        [user.id],
-      );
-
-      const permissionNames = new Set(
-        userPermissions.map((row: any) => row.name),
-      );
+      const permissionNames = new Set(userPermissions);
       const hasPermission = requiredPermissions.some((permission) => {
-        const found = permissionNames.has(permission);
-
-        return found;
+        return permissionNames.has(permission);
       });
 
       if (!hasPermission) {

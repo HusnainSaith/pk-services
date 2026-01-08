@@ -11,46 +11,97 @@ export class DocumentsService {
   ) {}
 
   async upload(file: Express.Multer.File, dto: any, userId: string): Promise<any> {
-    return { success: true, message: 'Document uploaded' };
+    if (!file) {
+      throw new Error('File is required');
+    }
+    
+    const document = this.documentRepository.create({
+      serviceRequestId: dto.serviceRequestId,
+      category: dto.documentType || 'general',
+      filename: file.originalname,
+      originalFilename: file.originalname,
+      filePath: `/uploads/${file.originalname}`,
+      fileSize: file.size,
+      mimeType: file.mimetype,
+      status: 'pending',
+      isRequired: false,
+      version: 1,
+    });
+    
+    const saved = await this.documentRepository.save(document);
+    return { success: true, message: 'Document uploaded successfully', data: saved };
   }
 
   async findByRequest(requestId: string, userId: string): Promise<any> {
-    return { success: true, data: [] };
+    const documents = await this.documentRepository.find({
+      where: { serviceRequestId: requestId },
+    });
+    return { success: true, data: documents };
   }
 
   async findOne(id: string): Promise<any> {
-    return { success: true, data: {} };
+    const document = await this.documentRepository.findOne({ where: { id } });
+    return { success: true, data: document };
   }
 
   async download(id: string, userId: string): Promise<any> {
-    return { success: true, message: 'Document downloaded' };
+    const document = await this.documentRepository.findOne({
+      where: { id },
+    });
+    return { success: true, message: 'Document downloaded', data: document };
   }
 
   async replace(id: string, file: Express.Multer.File): Promise<any> {
-    return { success: true, message: 'Document replaced' };
+    await this.documentRepository.update(id, {
+      filename: file.originalname,
+      fileSize: file.size,
+      mimeType: file.mimetype,
+      updatedAt: new Date(),
+    });
+    const updated = await this.documentRepository.findOne({ where: { id } });
+    return { success: true, message: 'Document replaced', data: updated };
   }
 
   async remove(id: string): Promise<any> {
+    await this.documentRepository.delete(id);
     return { success: true, message: 'Document deleted' };
   }
 
   async findAllByRequest(requestId: string): Promise<any> {
-    return { success: true, data: [] };
+    const documents = await this.documentRepository.find({
+      where: { serviceRequestId: requestId },
+    });
+    return { success: true, data: documents };
   }
 
   async approve(id: string, dto: any): Promise<any> {
-    return { success: true, message: 'Document approved' };
+    await this.documentRepository.update(id, {
+      status: 'approved',
+      adminNotes: dto.notes,
+    });
+    const updated = await this.documentRepository.findOne({ where: { id } });
+    return { success: true, message: 'Document approved', data: updated };
   }
 
   async reject(id: string, dto: any): Promise<any> {
-    return { success: true, message: 'Document rejected' };
+    await this.documentRepository.update(id, {
+      status: 'rejected',
+      adminNotes: dto.reason,
+    });
+    const updated = await this.documentRepository.findOne({ where: { id } });
+    return { success: true, message: 'Document rejected', data: updated };
   }
 
   async addNotes(id: string, dto: any): Promise<any> {
-    return { success: true, message: 'Admin notes added' };
+    await this.documentRepository.update(id, {
+      adminNotes: dto.notes,
+    });
+    const updated = await this.documentRepository.findOne({ where: { id } });
+    return { success: true, message: 'Admin notes added', data: updated };
   }
 
   async preview(id: string): Promise<any> {
-    return { success: true, message: 'Document preview' };
+    const document = await this.documentRepository.findOne({ where: { id } });
+    return { success: true, message: 'Document preview', data: document };
   }
 }

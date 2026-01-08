@@ -7,6 +7,6 @@ import { RolesGuard } from '../guards/roles.guard';
 @Module({
   imports: [TypeOrmModule.forFeature([User])],
   providers: [PermissionsGuard, RolesGuard],
-  exports: [PermissionsGuard, RolesGuard],
+  exports: [PermissionsGuard, RolesGuard, TypeOrmModule],
 })
 export class GuardsModule {}

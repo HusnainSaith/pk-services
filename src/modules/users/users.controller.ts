@@ -8,11 +8,15 @@ import {
   Delete,
   Patch,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
 import { FamilyMembersService } from './family-members.service';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { CreateFamilyMemberDto } from './dto/create-family-member.dto';
 import { UpdateFamilyMemberDto } from './dto/update-family-member.dto';
 import { UpdateGdprConsentDto } from './dto/update-gdpr-consent.dto';
@@ -57,7 +61,10 @@ export class UsersController {
   @Permissions('users:write_own')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Update extended profile' })
-  updateExtendedProfile(@CurrentUser() user: any, @Body() dto: any) {
+  updateExtendedProfile(
+    @CurrentUser() user: any,
+    @Body() dto: UpdateUserProfileDto,
+  ) {
     return this.usersService.updateExtendedProfile(user.id, dto);
   }
 
@@ -65,8 +72,26 @@ export class UsersController {
   @Permissions('users:write_own')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Upload avatar' })
-  uploadAvatar(@CurrentUser() user: any, @Body() dto: any) {
-    return this.usersService.uploadAvatar(user.id, dto);
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Avatar image file (JPEG, PNG, WebP)',
+        },
+      },
+      required: ['file'],
+    },
+  })
+  @UseInterceptors(FileInterceptor('file'))
+  uploadAvatar(
+    @CurrentUser() user: any,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.usersService.uploadAvatar(user.id, file);
   }
 
   @Delete('avatar')

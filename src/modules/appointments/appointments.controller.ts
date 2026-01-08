@@ -68,7 +68,10 @@ export class AppointmentsController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Reschedule appointment' })
   reschedule(@Param('id') id: string, @Body() dto: RescheduleAppointmentDto, @CurrentUser() user: any) {
-    return this.appointmentsService.reschedule(id, dto, user.id);
+    const dateTime = new Date(dto.newDateTime);
+    const newDate = dateTime;
+    const newTime = dateTime.toLocaleTimeString();
+    return this.appointmentsService.reschedule(id, newDate, newTime, 60, user.id);
   }
 
   @Delete(':id')
@@ -132,8 +135,8 @@ export class AppointmentsController {
   @Permissions('appointments:assign')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Assign operator' })
-  assign(@Param('id') id: string, @Body() dto: AssignOperatorDto) {
-    return this.appointmentsService.assign(id, dto);
+  assign(@Param('id') id: string, @Body() dto: AssignOperatorDto, @CurrentUser() user: any) {
+    return this.appointmentsService.assign(id, dto.operatorId, user.id);
   }
 
   @Patch(':id/status')
@@ -141,8 +144,8 @@ export class AppointmentsController {
   @Permissions('appointments:write')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Update status' })
-  updateStatus(@Param('id') id: string, @Body() dto: UpdateStatusDto) {
-    return this.appointmentsService.updateStatus(id, dto);
+  updateStatus(@Param('id') id: string, @Body() dto: UpdateStatusDto, @CurrentUser() user: any) {
+    return this.appointmentsService.updateStatus(id, dto.status, user.id);
   }
 
   @Post('slots')

@@ -9,25 +9,47 @@ import { extname } from 'path';
 export class StorageService {
   private s3Client: S3Client;
   private bucket: string;
+  private region: string;
+  private endpoint: string;
   private readonly logger = new Logger(StorageService.name);
 
   constructor(private readonly configService: ConfigService) {
-    const region = this.configService.get<string>('AWS_REGION');
+    this.region = this.configService.get<string>('AWS_REGION') || 'us-east-1';
+    this.endpoint = this.configService.get<string>('AWS_S3_ENDPOINT');
     const accessKeyId = this.configService.get<string>('AWS_ACCESS_KEY_ID');
     const secretAccessKey = this.configService.get<string>('AWS_SECRET_ACCESS_KEY');
-    this.bucket = this.configService.get<string>('AWS_S3_BUCKET_NAME');
+    this.bucket = this.configService.get<string>('AWS_S3_BUCKET');
 
-    if (!region || !accessKeyId || !secretAccessKey || !this.bucket) {
+    this.logger.debug(`S3 Config - Region: ${this.region}, Bucket: ${this.bucket}, Endpoint: ${this.endpoint}`);
+
+    if (!accessKeyId || !secretAccessKey || !this.bucket) {
       this.logger.error('AWS S3 configuration is missing');
     }
 
-    this.s3Client = new S3Client({
-      region,
+    const clientConfig: any = {
+      region: this.region,
       credentials: {
         accessKeyId,
         secretAccessKey,
       },
-    });
+      // Use path-style addressing 
+      forcePathStyle: true,
+      // Disable signature validation for path-style requests
+      s3ForcePathStyle: true,
+    };
+
+    // Add custom endpoint if configured (for LocalStack, MinIO, etc.)
+    if (this.endpoint) {
+      clientConfig.endpoint = this.endpoint;
+      this.logger.debug(`Using custom S3 endpoint: ${this.endpoint}`);
+    } else {
+      // For AWS S3, explicitly set the endpoint to the regional endpoint
+      // This helps avoid redirect issues
+      clientConfig.endpoint = `https://s3.${this.region}.amazonaws.com`;
+      this.logger.debug(`Using AWS regional endpoint: ${clientConfig.endpoint}`);
+    }
+
+    this.s3Client = new S3Client(clientConfig);
   }
 
   async uploadFile(
@@ -39,26 +61,38 @@ export class StorageService {
       const fileName = `${uuidv4()}${fileExt}`;
       const filePath = `${pathPrefix}/${fileName}`;
 
+      // Minimal logging - only info level for production
+      if (process.env.NODE_ENV !== 'production') {
+        this.logger.debug(`Uploading: ${filePath}`);
+      }
+
       const command = new PutObjectCommand({
         Bucket: this.bucket,
         Key: filePath,
         Body: file.buffer,
         ContentType: file.mimetype,
-        Metadata: {
-          originalName: file.originalname,
-          uploadedAt: new Date().toISOString(),
-        },
       });
 
+      // Send to S3 without waiting for response processing
       await this.s3Client.send(command);
+
+      // Build URL while S3 confirms receipt
+      const publicUrl = this.endpoint
+        ? `${this.endpoint}/${this.bucket}/${filePath}`
+        : `https://s3.${this.region}.amazonaws.com/${this.bucket}/${filePath}`;
 
       return {
         path: filePath,
-        publicUrl: `https://${this.bucket}.s3.${this.configService.get('AWS_REGION')}.amazonaws.com/${filePath}`,
+        publicUrl,
       };
     } catch (error) {
-      this.logger.error(`Error uploading file: ${error.message}`, error.stack);
-      throw new BadRequestException('Failed to upload file');
+      this.logger.error(`Upload failed: ${error.message}`);
+      
+      if (error.Code === 'InvalidAccessKeyId' || error.Code === 'SignatureDoesNotMatch') {
+        throw new BadRequestException('AWS credentials invalid');
+      }
+
+      throw new BadRequestException('File upload failed');
     }
   }
 
@@ -78,14 +112,19 @@ export class StorageService {
 
   async deleteFile(path: string): Promise<void> {
     try {
+      this.logger.debug(`Deleting S3 object - Bucket: ${this.bucket}, Key: ${path}`);
       const command = new DeleteObjectCommand({
         Bucket: this.bucket,
         Key: path,
       });
       await this.s3Client.send(command);
+      this.logger.debug(`Successfully deleted: ${path}`);
     } catch (error) {
-      this.logger.error(`Error deleting file: ${error.message}`);
+      this.logger.error(`Error deleting file - Key: ${path}, Error: ${error.message}`);
       throw new BadRequestException('Failed to delete file');
     }
   }
-}
+
+  getBucketName(): string {
+    return this.bucket;
+  }}

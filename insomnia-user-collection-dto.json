@@ -1,0 +1,931 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2024-01-04T00:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2023.5.8",
+  "resources": [
+    {
+      "_id": "wrk_user",
+      "_type": "workspace",
+      "parentId": null,
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "name": "PK SERVIZI User API",
+      "description": "Customer/User endpoints based on actual DTOs",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_user",
+      "_type": "environment",
+      "parentId": "wrk_user",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:3000",
+        "access_token": "",
+        "user_id": "",
+        "service_request_id": "",
+        "appointment_id": "",
+        "course_id": ""
+      },
+      "dataPropertyOrder": {
+        "&": ["base_url", "access_token", "user_id", "service_request_id", "appointment_id", "course_id"]
+      },
+      "color": null,
+      "isPrivate": false,
+      "metaSortKey": 1704326400000
+    },
+    {
+      "_id": "fld_auth",
+      "_type": "request_group",
+      "parentId": "wrk_user",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "name": "🔐 Authentication",
+      "description": "User authentication endpoints",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1704326400000
+    },
+    {
+      "_id": "req_register",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "url": "{{ _.base_url }}/auth/register",
+      "name": "Register",
+      "description": "Register new user with complete profile data",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"mario.rossi@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"firstName\": \"Mario\",\n  \"lastName\": \"Rossi\",\n  \"fiscalCode\": \"RSSMRA85M01H501Z\",\n  \"phone\": \"+39 333 1234567\",\n  \"dateOfBirth\": \"1985-08-01\",\n  \"address\": \"Via Roma 123\",\n  \"city\": \"Milano\",\n  \"postalCode\": \"20100\",\n  \"province\": \"MI\",\n  \"gdprConsent\": true,\n  \"marketingConsent\": false\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1704326400000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_login",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "url": "{{ _.base_url }}/auth/login",
+      "name": "Login",
+      "description": "User login",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"mario.rossi@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1704326399000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_refresh",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "url": "{{ _.base_url }}/auth/refresh",
+      "name": "Refresh Token",
+      "description": "Refresh access token",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"refresh_token\": \"your_refresh_token_here\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1704326398000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_me",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "url": "{{ _.base_url }}/auth/me",
+      "name": "Get Current User",
+      "description": "Get current user profile",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1704326397000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "fld_profile",
+      "_type": "request_group",
+      "parentId": "wrk_user",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "name": "👤 User Profile",
+      "description": "User profile management",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1704326390000
+    },
+    {
+      "_id": "req_profile_get",
+      "_type": "request",
+      "parentId": "fld_profile",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "url": "{{ _.base_url }}/users/profile",
+      "name": "Get Profile",
+      "description": "Get user profile",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1704326390000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_profile_update",
+      "_type": "request",
+      "parentId": "fld_profile",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "url": "{{ _.base_url }}/users/profile",
+      "name": "Update Profile",
+      "description": "Update user profile",
+      "method": "PUT",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"bio\": \"Updated bio\",\n  \"dateOfBirth\": \"1985-08-01\",\n  \"gender\": \"male\",\n  \"nationality\": \"Italian\",\n  \"maritalStatus\": \"single\",\n  \"occupation\": \"Software Developer\",\n  \"employer\": \"Tech Company\",\n  \"monthlyIncome\": 3000.00,\n  \"emergencyContactName\": \"John Doe\",\n  \"emergencyContactPhone\": \"+39 333 9876543\",\n  \"emergencyContactRelationship\": \"brother\",\n  \"preferredLanguage\": \"it\",\n  \"preferredCommunication\": \"email\",\n  \"notificationsEnabled\": true,\n  \"emailNotifications\": true,\n  \"smsNotifications\": false\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1704326389000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "fld_service_requests",
+      "_type": "request_group",
+      "parentId": "wrk_user",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "name": "📋 Service Requests",
+      "description": "Service request management",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1704326380000
+    },
+    {
+      "_id": "req_service_requests_my",
+      "_type": "request",
+      "parentId": "fld_service_requests",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "url": "{{ _.base_url }}/service-requests/my",
+      "name": "My Service Requests",
+      "description": "Get my service requests",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "status",
+          "value": "draft"
+        },
+        {
+          "name": "page",
+          "value": "1"
+        },
+        {
+          "name": "limit",
+          "value": "10"
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1704326380000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_service_request_create",
+      "_type": "request",
+      "parentId": "fld_service_requests",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "url": "{{ _.base_url }}/service-requests",
+      "name": "Create Service Request",
+      "description": "Create new service request",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"userId\": \"{{ _.user_id }}\",\n  \"serviceTypeId\": \"service-type-uuid-here\",\n  \"status\": \"draft\",\n  \"formData\": {\n    \"nucleo_familiare\": [\n      {\n        \"nome\": \"Mario\",\n        \"cognome\": \"Rossi\",\n        \"codice_fiscale\": \"RSSMRA85M01H501Z\",\n        \"data_nascita\": \"1985-08-01\",\n        \"relazione\": \"richiedente\"\n      }\n    ],\n    \"abitazione\": {\n      \"tipo\": \"proprieta\",\n      \"indirizzo\": \"Via Roma 123, Milano\"\n    }\n  },\n  \"userNotes\": \"Need help with ISEE calculation\",\n  \"priority\": \"normal\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1704326379000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_service_request_submit",
+      "_type": "request",
+      "parentId": "fld_service_requests",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "url": "{{ _.base_url }}/service-requests/{{ _.service_request_id }}/submit",
+      "name": "Submit Service Request",
+      "description": "Submit service request for processing",
+      "method": "POST",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1704326378000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "fld_documents",
+      "_type": "request_group",
+      "parentId": "wrk_user",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "name": "📄 Documents",
+      "description": "Document management",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1704326370000
+    },
+    {
+      "_id": "req_document_upload",
+      "_type": "request",
+      "parentId": "fld_documents",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "url": "{{ _.base_url }}/documents/upload",
+      "name": "Upload Document",
+      "description": "Upload document for service request",
+      "method": "POST",
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          {
+            "name": "requestId",
+            "value": "{{ _.service_request_id }}"
+          },
+          {
+            "name": "documentType",
+            "value": "carta_identita"
+          },
+          {
+            "name": "description",
+            "value": "Identity card front side"
+          },
+          {
+            "name": "file",
+            "type": "file",
+            "src": ""
+          }
+        ]
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1704326370000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_documents_request",
+      "_type": "request",
+      "parentId": "fld_documents",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "url": "{{ _.base_url }}/documents/request/{{ _.service_request_id }}",
+      "name": "Get Request Documents",
+      "description": "Get documents for a service request",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1704326369000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "fld_appointments",
+      "_type": "request_group",
+      "parentId": "wrk_user",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "name": "📅 Appointments",
+      "description": "Appointment management",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1704326360000
+    },
+    {
+      "_id": "req_appointments_available",
+      "_type": "request",
+      "parentId": "fld_appointments",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "url": "{{ _.base_url }}/appointments/available-slots",
+      "name": "Available Slots",
+      "description": "Get available appointment slots",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "date",
+          "value": "2024-01-15"
+        },
+        {
+          "name": "serviceType",
+          "value": "isee"
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1704326360000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_appointment_create",
+      "_type": "request",
+      "parentId": "fld_appointments",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "url": "{{ _.base_url }}/appointments",
+      "name": "Book Appointment",
+      "description": "Book new appointment",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"userId\": \"{{ _.user_id }}\",\n  \"serviceTypeId\": \"service-type-uuid-here\",\n  \"title\": \"ISEE Consultation\",\n  \"description\": \"Need help with ISEE calculation\",\n  \"appointmentDate\": \"2024-01-15T10:00:00.000Z\",\n  \"durationMinutes\": 60,\n  \"status\": \"scheduled\",\n  \"location\": \"Office\",\n  \"notes\": \"First time consultation\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1704326359000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_appointments_my",
+      "_type": "request",
+      "parentId": "fld_appointments",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "url": "{{ _.base_url }}/appointments/my",
+      "name": "My Appointments",
+      "description": "Get my appointments",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1704326358000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "fld_courses",
+      "_type": "request_group",
+      "parentId": "wrk_user",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "name": "🎓 Courses",
+      "description": "Course management",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1704326350000
+    },
+    {
+      "_id": "req_courses_list",
+      "_type": "request",
+      "parentId": "fld_courses",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "url": "{{ _.base_url }}/courses",
+      "name": "List Active Courses",
+      "description": "Get list of active courses",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1704326350000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_course_details",
+      "_type": "request",
+      "parentId": "fld_courses",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "url": "{{ _.base_url }}/courses/{{ _.course_id }}",
+      "name": "Get Course Details",
+      "description": "Get course details",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1704326349000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_course_enroll",
+      "_type": "request",
+      "parentId": "fld_courses",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "url": "{{ _.base_url }}/courses/{{ _.course_id }}/enroll",
+      "name": "Enroll in Course",
+      "description": "Enroll in a course",
+      "method": "POST",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1704326348000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_my_enrollments",
+      "_type": "request",
+      "parentId": "fld_courses",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "url": "{{ _.base_url }}/courses/my-enrollments",
+      "name": "My Enrollments",
+      "description": "Get my course enrollments",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1704326347000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "fld_subscriptions",
+      "_type": "request_group",
+      "parentId": "wrk_user",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "name": "💳 Subscriptions",
+      "description": "Subscription management",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1704326340000
+    },
+    {
+      "_id": "req_checkout_create",
+      "_type": "request",
+      "parentId": "fld_subscriptions",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "url": "{{ _.base_url }}/subscriptions/checkout",
+      "name": "Create Checkout",
+      "description": "Create subscription checkout session",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"planId\": \"plan-uuid-here\",\n  \"successUrl\": \"https://app.pkservizi.com/payment/success\",\n  \"cancelUrl\": \"https://app.pkservizi.com/payment/cancel\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1704326340000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_subscription_status",
+      "_type": "request",
+      "parentId": "fld_subscriptions",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "url": "{{ _.base_url }}/subscriptions/my",
+      "name": "My Subscription",
+      "description": "Get my subscription status",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1704326339000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "fld_notifications",
+      "_type": "request_group",
+      "parentId": "wrk_user",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "name": "🔔 Notifications",
+      "description": "Notification management",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1704326330000
+    },
+    {
+      "_id": "req_notifications_my",
+      "_type": "request",
+      "parentId": "fld_notifications",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "url": "{{ _.base_url }}/notifications/my",
+      "name": "My Notifications",
+      "description": "Get my notifications",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1704326330000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_notifications_unread",
+      "_type": "request",
+      "parentId": "fld_notifications",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "url": "{{ _.base_url }}/notifications/unread-count",
+      "name": "Unread Count",
+      "description": "Get unread notifications count",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1704326329000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_notification_read",
+      "_type": "request",
+      "parentId": "fld_notifications",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "url": "{{ _.base_url }}/notifications/notification-id-here/read",
+      "name": "Mark as Read",
+      "description": "Mark notification as read",
+      "method": "PATCH",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1704326328000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "fld_cms",
+      "_type": "request_group",
+      "parentId": "wrk_user",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "name": "📰 CMS Content",
+      "description": "Public content access",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1704326320000
+    },
+    {
+      "_id": "req_cms_pages",
+      "_type": "request",
+      "parentId": "fld_cms",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "url": "{{ _.base_url }}/cms/pages/privacy-policy",
+      "name": "Get Page by Slug",
+      "description": "Get CMS page by slug",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1704326320000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_cms_news",
+      "_type": "request",
+      "parentId": "fld_cms",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "url": "{{ _.base_url }}/cms/news",
+      "name": "List News",
+      "description": "Get published news articles",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1704326319000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_cms_faqs",
+      "_type": "request",
+      "parentId": "fld_cms",
+      "modified": 1704326400000,
+      "created": 1704326400000,
+      "url": "{{ _.base_url }}/cms/faqs",
+      "name": "List FAQs",
+      "description": "Get FAQ list",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1704326318000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    }
+  ]
+}

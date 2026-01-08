@@ -13,6 +13,7 @@ import { Role } from '../../roles/entities/role.entity';
 import { UserProfile } from './user-profile.entity';
 import { FamilyMember } from './family-member.entity';
 import { RefreshToken } from '../../auth/entities/refresh-token.entity';
+import { UserSubscription } from '../../subscriptions/entities/user-subscription.entity';
 
 @Entity('users')
 export class User {
@@ -83,6 +84,9 @@ export class User {
   @OneToMany(() => RefreshToken, (token) => token.user)
   refreshTokens: RefreshToken[];
 
+  @OneToMany(() => UserSubscription, (subscription) => subscription.user)
+  subscriptions: UserSubscription[];
+
   // Virtual properties for relationships that don't exist yet
   permissions?: any[];
   appointments?: any[];
@@ -96,7 +100,6 @@ export class User {
   serviceRequests?: any[];
   assignedRequests?: any[];
   statusChanges?: any[];
-  subscriptions?: any[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

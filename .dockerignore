@@ -1,0 +1,47 @@
+# Dependencies
+node_modules
+npm-debug.log*
+
+# Build outputs
+dist
+coverage
+.nyc_output
+
+# Environment files
+.env*
+!.env.docker
+
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+*.md
+
+# Docker files
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Development files
+.vscode
+.idea
+
+# Logs
+logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Uploads (keep structure)
+uploads/*
+!uploads/.gitkeep
+
+# OS generated files
+.DS_Store
+Thumbs.db
