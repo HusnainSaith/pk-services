@@ -1,35 +1,43 @@
 import { BadRequestException } from '@nestjs/common';
 
+/**
+ * @deprecated Use Validators from './validators' instead
+ * This file maintained for backward compatibility
+ * Will be removed in next major version
+ */
 export class ValidationUtil {
-  static validateRequired(value: any, fieldName: string): void {
-    if (value === undefined || value === null) {
+  // Basic validation
+  static validateRequired(value: any, fieldName = 'field'): void {
+    if (value === undefined || value === null || value === '') {
       throw new BadRequestException(`${fieldName} is required`);
-    }
-    if (typeof value === 'string' && value.trim() === '') {
-      throw new BadRequestException(`${fieldName} cannot be empty`);
     }
   }
 
   static validateString(
     value: any,
     fieldName: string,
-    minLength = 1,
-    maxLength = 255,
+    minLength?: number,
+    maxLength?: number,
   ): void {
     this.validateRequired(value, fieldName);
     if (typeof value !== 'string') {
       throw new BadRequestException(`${fieldName} must be a string`);
     }
-    if (value.trim().length < minLength) {
+    if (minLength !== undefined && value.length < minLength) {
       throw new BadRequestException(
-        `${fieldName} must be at least ${minLength} characters long`,
+        `${fieldName} must be at least ${minLength} characters`,
       );
     }
-    if (value.trim().length > maxLength) {
+    if (maxLength !== undefined && value.length > maxLength) {
       throw new BadRequestException(
         `${fieldName} must not exceed ${maxLength} characters`,
       );
     }
+  }
+
+  static sanitizeString(value: any): any {
+    if (!value || typeof value !== 'string') return value;
+    return value.replace(/[<>\"'%;()&+]/g, '').trim();
   }
 
   static validateEmail(email: any): void {
@@ -52,6 +60,15 @@ export class ValidationUtil {
       /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(id)) {
       throw new BadRequestException(`Invalid ${fieldName} format`);
+    }
+  }
+
+  static validatePassword(password: any): void {
+    this.validateString(password, 'password', 8, 128);
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+      throw new BadRequestException(
+        'Password must contain at least one uppercase letter, one lowercase letter, and one number',
+      );
     }
   }
 
@@ -109,85 +126,44 @@ export class ValidationUtil {
     }
   }
 
-  static validatePassword(password: any): void {
-    this.validateString(password, 'password', 8, 128);
-    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
-      throw new BadRequestException(
-        'Password must contain at least one uppercase letter, one lowercase letter, and one number',
-      );
+  static validateObject(obj: any): void {
+    if (!obj || typeof obj !== 'object') return;
+
+    const dangerousKeys = [
+      '$where',
+      '$regex',
+      '$ne',
+      '$gt',
+      '$gte',
+      '$lt',
+      '$lte',
+      '$in',
+      '$nin',
+      '$exists',
+      '$type',
+      '$or',
+      '$and',
+      '$not',
+      '$nor',
+    ];
+
+    for (const key of Object.keys(obj)) {
+      if (dangerousKeys.includes(key)) {
+        throw new BadRequestException(`Dangerous operator: ${key}`);
+      }
+      if (typeof obj[key] === 'object' && obj[key] !== null) {
+        this.validateObject(obj[key]);
+      }
     }
   }
 
-  static sanitizeString(value: string): string {
-    return value?.trim() || '';
+  static validateId(id: any): string {
+    this.validateUUID(id, 'id');
+    return id;
   }
 
-  static validateObjectId(value: any, fieldName = 'id'): void {
-    this.validateRequired(value, fieldName);
-    if (typeof value === 'string') {
-      const uuidRegex =
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      if (uuidRegex.test(value)) return;
-      if (/^\d+$/.test(value)) return;
-    }
-    if (typeof value === 'number' && value > 0) return;
-
-    throw new BadRequestException(`Invalid ${fieldName} format`);
-  }
-
-  static validatePhone(phone: any): void {
-    if (!phone) return; // Optional field
-    if (typeof phone !== 'string') {
-      throw new BadRequestException('Phone must be a string');
-    }
-    const phoneRegex = /^[+]?[1-9]?[0-9]{7,15}$/;
-    if (!phoneRegex.test(phone.replace(/[\s-()]/g, ''))) {
-      throw new BadRequestException('Invalid phone number format');
-    }
-  }
-
-  static validateUrl(url: any, fieldName: string): void {
-    if (!url) return; // Optional field
-    if (typeof url !== 'string') {
-      throw new BadRequestException(`${fieldName} must be a string`);
-    }
-    try {
-      new URL(url);
-    } catch {
-      throw new BadRequestException(`Invalid ${fieldName} format`);
-    }
-  }
-
-  static validateDecimal(value: any, fieldName: string, precision = 2): void {
-    this.validateRequired(value, fieldName);
-    if (typeof value !== 'number' || isNaN(value)) {
-      throw new BadRequestException(`${fieldName} must be a valid number`);
-    }
-    if (value < 0) {
-      throw new BadRequestException(`${fieldName} must be a positive number`);
-    }
-    const decimalPlaces = (value.toString().split('.')[1] || '').length;
-    if (decimalPlaces > precision) {
-      throw new BadRequestException(
-        `${fieldName} can have at most ${precision} decimal places`,
-      );
-    }
-  }
-
-  static createSuccessResponse(message: string, data?: any) {
-    return {
-      success: true,
-      message,
-      ...(data && { data }),
-    };
-  }
-
-  static createErrorResponse(message: string, details?: any) {
-    return {
-      success: false,
-      message,
-      ...(details && { details }),
-    };
+  static sanitizeLogMessage(message: string): string {
+    return message?.replace(/password|token|secret|key/gi, '***').replace(/[\r\n\t]/g, ' ') || '';
   }
 
   static createPaginatedResponse(

@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { validate } from 'class-validator';
 import { plainToClass } from 'class-transformer';
-import { SecurityUtil } from '../utils/security.util';
+import { ValidationUtil } from '../utils/validation.util';
 
 @Injectable()
 export class ValidationPipe implements PipeTransform<any> {
@@ -42,7 +42,7 @@ export class ValidationPipe implements PipeTransform<any> {
     for (const key in obj) {
       if (obj.hasOwnProperty(key)) {
         if (typeof obj[key] === 'string') {
-          sanitized[key] = SecurityUtil.sanitizeString(obj[key]);
+          sanitized[key] = ValidationUtil.sanitizeString(obj[key]);
         } else if (typeof obj[key] === 'object') {
           sanitized[key] = this.sanitizeObject(obj[key]);
         } else {

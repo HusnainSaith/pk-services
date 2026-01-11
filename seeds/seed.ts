@@ -4,7 +4,6 @@ import { Role } from '../src/modules/roles/entities/role.entity';
 import { User } from '../src/modules/users/entities/user.entity';
 import * as bcrypt from 'bcryptjs';
 import { RoleEnum } from '../src/modules/roles/role.enum';
-import { SecurityUtil } from '../src/common/utils/security.util';
 
 // Import the permissions seeding function
 import { seedPermissions } from './permissions-seed';
@@ -47,11 +46,11 @@ async function seed() {
         role = roleRepo.create(roleData);
         await roleRepo.save(role);
         console.log(
-          `Role "${SecurityUtil.sanitizeLogMessage(roleData.name)}" created.`,
+          `Role "${roleData.name}" created.`,
         );
       } else {
         console.log(
-          `Role "${SecurityUtil.sanitizeLogMessage(roleData.name)}" already exists.`,
+          `Role "${roleData.name}" already exists.`,
         );
       }
     }

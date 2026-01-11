@@ -5,10 +5,12 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { UserSubscription } from '../../subscriptions/entities/user-subscription.entity';
+import { Invoice } from './invoice.entity';
 
 @Entity('payments')
 export class Payment {
@@ -55,6 +57,9 @@ export class Payment {
   @ManyToOne(() => UserSubscription, (subscription) => subscription.payments)
   @JoinColumn({ name: 'subscription_id' })
   subscription: UserSubscription;
+
+  @OneToMany(() => Invoice, (invoice) => invoice.payment)
+  invoices: Invoice[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

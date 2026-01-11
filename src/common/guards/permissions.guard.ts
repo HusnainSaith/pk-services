@@ -81,7 +81,11 @@ export class PermissionsGuard implements CanActivate {
           'appointments:write_own',
           'notifications:read_own',
           'courses:read_own',
-          'courses:write_own'
+          'courses:write_own',
+          'subscriptions:read_own',
+          'subscriptions:write_own',
+          'payments:read_own',
+          'payments:write_own'
         ];
         userPermissions = [...userPermissions, ...customerPermissions];
       }

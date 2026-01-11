@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { GlobalValidationPipe } from './common/pipes/global-validation.pipe';
@@ -7,7 +8,27 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // Create app with rawBody enabled for Stripe webhooks
+  const app = await NestFactory.create(AppModule, {
+    logger: ['error', 'warn', 'log'],
+    bufferLogs: true,
+    rawBody: true,
+  });
+
+  const configService = app.get(ConfigService);
+  const isProduction = configService.get('NODE_ENV') === 'production';
+  const port = configService.get<number>('API_PORT', 3000);
+
+  // Compression middleware
+  // app.use(compression({
+  //   filter: (req, res) => {
+  //     if (req.headers['x-no-compression']) {
+  //       return false;
+  //     }
+  //     return compression.filter(req, res);
+  //   },
+  //   threshold: configService.get<number>('COMPRESSION_THRESHOLD', 1024),
+  // }));
 
   // Security middleware
   app.use(
@@ -24,58 +45,99 @@ async function bootstrap() {
     }),
   );
 
-  // Rate limiting
-  app.use(
-    rateLimit({
-      windowMs: 60 * 1000,
-      limit: 300,
-      standardHeaders: true,
-      legacyHeaders: false,
-    }),
-  );
+  // Rate limiting with environment-specific settings
+  const rateLimitConfig = {
+    windowMs: configService.get<number>('RATE_LIMIT_WINDOW', 60000),
+    limit: configService.get<number>('RATE_LIMIT_MAX', isProduction ? 100 : 300),
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      error: 'Too many requests',
+      message: 'Rate limit exceeded. Please try again later.',
+    },
+  };
+  
+  app.use(rateLimit(rateLimitConfig));
 
   // CORS configuration
+  const corsOrigins = configService.get<string>('CORS_ORIGINS', 'http://localhost:3001').split(',');
   app.enableCors({
-    origin: [
-      'https://app.pkservizi.com',
-      'https://admin.pkservizi.com',
-      'http://localhost:3000',
-      'http://localhost:3001',
-    ],
-    credentials: true,
+    origin: corsOrigins,
+    credentials: configService.get<boolean>('CORS_CREDENTIALS', true),
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: 'Content-Type, Authorization',
+    allowedHeaders: 'Content-Type, Authorization, X-Requested-With',
+    optionsSuccessStatus: 200,
   });
 
   // Global pipes and filters
   app.useGlobalPipes(new GlobalValidationPipe());
+  
   app.useGlobalFilters(new GlobalExceptionFilter());
 
-  // // Global prefix
-  // app.setGlobalPrefix('api/v1');
-
-  // Swagger documentation
-  const config = new DocumentBuilder()
-    .setTitle('PK SERVIZI API')
-    .setDescription('Complete service management system API')
-    .setVersion('1.0')
-    .addBearerAuth(
-      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
-      'JWT-auth',
-    )
-    .build();
-
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document, {
-    swaggerOptions: {
-      persistAuthorization: true,
-    },
+  // API versioning
+  app.setGlobalPrefix('api/v1', {
+    exclude: ['health', 'metrics'],
   });
 
-  const port = process.env.PORT || 3000;
-  await app.listen(port);
+  // Swagger documentation (only in development)
+  if (!isProduction) {
+    const config = new DocumentBuilder()
+      .setTitle('PK SERVIZI API')
+      .setDescription('Complete service management system API with optimized performance')
+      .setVersion('1.0')
+      .addBearerAuth(
+        { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+        'JWT-auth',
+      )
+      .addTag('Authentication', 'User authentication and authorization')
+      .addTag('Users', 'User management operations')
+      .addTag('Appointments', 'Appointment booking and management')
+      .addTag('Service Requests', 'Service request processing')
+      .addTag('Documents', 'Document management')
+      .addTag('Payments', 'Payment processing')
+      .addTag('Admin', 'Administrative operations')
+      .build();
+
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/docs', app, document, {
+      swaggerOptions: {
+        persistAuthorization: true,
+        displayRequestDuration: true,
+        filter: true,
+        showExtensions: true,
+      },
+      customSiteTitle: 'PK SERVIZI API Documentation',
+    });
+  }
+
+  // Graceful shutdown
+  process.on('SIGTERM', async () => {
+    console.log('SIGTERM received, shutting down gracefully');
+    await app.close();
+    process.exit(0);
+  });
+
+  process.on('SIGINT', async () => {
+    console.log('SIGINT received, shutting down gracefully');
+    await app.close();
+    process.exit(0);
+  });
+
+  // Start server
+  await app.listen(port, '0.0.0.0');
+  
   console.log(`🚀 PK SERVIZI API running on: http://localhost:${port}`);
-  console.log(`📚 API Documentation: http://localhost:${port}/api/docs`);
+  console.log(`📊 Environment: ${configService.get('NODE_ENV', 'development')}`);
+  
+  if (!isProduction) {
+    console.log(`📚 API Documentation: http://localhost:${port}/api/docs`);
+  }
+  
+  console.log(`🔧 Health Check: http://localhost:${port}/health`);
+  console.log(`⚡ Performance optimizations enabled`);
 }
 
-bootstrap();
+bootstrap().catch((error) => {
+  console.error('Failed to start application:', error);
+  process.exit(1);
+});

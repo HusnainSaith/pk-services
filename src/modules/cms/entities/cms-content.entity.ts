@@ -39,6 +39,9 @@ export class CmsContent {
   @Column({ nullable: true, name: 'published_at' })
   publishedAt: Date;
 
+  @Column({ type: 'int', default: 0 })
+  views: number;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

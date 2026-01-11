@@ -1,7 +1,10 @@
-import { Module } from '@nestjs/common';
+import { Module, Global } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { CacheService } from '../../common/services/cache.service';
+import { PerformanceService } from '../../common/services/performance.service';
 
+@Global()
 @Module({
   imports: [
     JwtModule.registerAsync({
@@ -13,6 +16,14 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       }),
     }),
   ],
-  exports: [JwtModule],
+  providers: [
+    CacheService,
+    PerformanceService,
+  ],
+  exports: [
+    JwtModule,
+    CacheService,
+    PerformanceService,
+  ],
 })
 export class SharedModule {}

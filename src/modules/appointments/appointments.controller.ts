@@ -9,7 +9,7 @@ import {
   UseGuards,
   Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { RescheduleAppointmentDto } from './dto/reschedule-appointment.dto';
@@ -29,28 +29,65 @@ export class AppointmentsController {
 
   // Public Routes
   @Get('available-slots')
-  @ApiOperation({ summary: 'Get available time slots' })
-  getAvailableSlots(@Query('operatorId') operatorId?: string, @Query('date') date?: string) {
-    return this.appointmentsService.getAvailableSlots(operatorId, date ? new Date(date) : new Date());
+  @ApiOperation({ summary: 'Get available time slots for booking' })
+  @ApiQuery({ name: 'operatorId', required: false, description: 'Specific operator ID' })
+  @ApiQuery({ name: 'date', required: false, description: 'Date in YYYY-MM-DD format' })
+  @ApiQuery({ name: 'duration', required: false, description: 'Duration in minutes (30, 60, 90)' })
+  async getAvailableSlots(
+    @Query('operatorId') operatorId?: string,
+    @Query('date') date?: string,
+    @Query('duration') duration?: string
+  ) {
+    const appointmentDate = date ? new Date(date) : new Date();
+    const durationMinutes = duration ? parseInt(duration) : 60;
+    
+    const slots = await this.appointmentsService.getAvailableSlots(
+      operatorId,
+      appointmentDate,
+      durationMinutes
+    );
+    
+    return {
+      success: true,
+      data: {
+        date: appointmentDate.toISOString().split('T')[0],
+        operatorId,
+        duration: durationMinutes,
+        availableSlots: slots
+      }
+    };
   }
 
   // Customer Routes
-  @Get('my')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @Permissions('appointments:read_own')
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'List my appointments' })
-  findMy(@CurrentUser() user: any) {
-    return this.appointmentsService.findByUser(user.id);
-  }
-
   @Post()
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('appointments:write_own')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Book appointment' })
+  @ApiOperation({ summary: 'Book a new appointment' })
   create(@Body() dto: CreateAppointmentDto, @CurrentUser() user: any) {
     return this.appointmentsService.create(dto, user.id);
+  }
+
+  @Get('my')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('appointments:read_own')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Get my appointments' })
+  @ApiQuery({ name: 'status', required: false })
+  @ApiQuery({ name: 'skip', required: false })
+  @ApiQuery({ name: 'take', required: false })
+  findMy(
+    @CurrentUser() user: any,
+    @Query('status') status?: string,
+    @Query('skip') skip?: string,
+    @Query('take') take?: string
+  ) {
+    const options = {
+      status,
+      skip: skip ? parseInt(skip) : 0,
+      take: take ? parseInt(take) : 20
+    };
+    return this.appointmentsService.findByUser(user.id, options);
   }
 
   @Get(':id')
@@ -67,11 +104,26 @@ export class AppointmentsController {
   @Permissions('appointments:write_own')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Reschedule appointment' })
-  reschedule(@Param('id') id: string, @Body() dto: RescheduleAppointmentDto, @CurrentUser() user: any) {
-    const dateTime = new Date(dto.newDateTime);
-    const newDate = dateTime;
-    const newTime = dateTime.toLocaleTimeString();
-    return this.appointmentsService.reschedule(id, newDate, newTime, 60, user.id);
+  reschedule(
+    @Param('id') id: string, 
+    @Body() dto: RescheduleAppointmentDto, 
+    @CurrentUser() user: any
+  ) {
+    return this.appointmentsService.reschedule(
+      id, 
+      dto.newDateTime, 
+      user.id, 
+      dto.reason
+    );
+  }
+
+  @Patch(':id/confirm')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('appointments:write_own')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Confirm appointment' })
+  confirm(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.appointmentsService.confirmByUser(id, user.id);
   }
 
   @Delete(':id')
@@ -79,11 +131,131 @@ export class AppointmentsController {
   @Permissions('appointments:delete_own')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Cancel appointment' })
-  cancel(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.appointmentsService.cancel(id, user.id);
+  cancel(
+    @Param('id') id: string, 
+    @CurrentUser() user: any,
+    @Body('reason') reason?: string
+  ) {
+    return this.appointmentsService.cancel(id, user.id, reason);
   }
 
-  // Extended Operations - Reminders & Calendar
+  // Admin/Operator Routes
+  @Get()
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('appointments:read')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'List all appointments (Admin/Operator)' })
+  @ApiQuery({ name: 'status', required: false })
+  @ApiQuery({ name: 'operatorId', required: false })
+  @ApiQuery({ name: 'userId', required: false })
+  @ApiQuery({ name: 'startDate', required: false })
+  @ApiQuery({ name: 'endDate', required: false })
+  @ApiQuery({ name: 'skip', required: false })
+  @ApiQuery({ name: 'take', required: false })
+  findAll(
+    @Query('status') status?: string,
+    @Query('operatorId') operatorId?: string,
+    @Query('userId') userId?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('skip') skip?: string,
+    @Query('take') take?: string
+  ) {
+    const query = {
+      status,
+      operatorId,
+      userId,
+      startDate,
+      endDate,
+      skip: skip ? parseInt(skip) : 0,
+      take: take ? parseInt(take) : 20
+    };
+    return this.appointmentsService.findAll(query);
+  }
+
+  @Get('calendar/view')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('appointments:read')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Get calendar view' })
+  @ApiQuery({ name: 'operatorId', required: false })
+  @ApiQuery({ name: 'startDate', required: false })
+  @ApiQuery({ name: 'endDate', required: false })
+  getCalendar(
+    @Query('operatorId') operatorId?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string
+  ) {
+    return this.appointmentsService.getCalendar(
+      operatorId,
+      startDate ? new Date(startDate) : undefined,
+      endDate ? new Date(endDate) : undefined
+    );
+  }
+
+  @Patch(':id/assign')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('appointments:assign')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Assign operator to appointment' })
+  assign(
+    @Param('id') id: string, 
+    @Body() dto: AssignOperatorDto, 
+    @CurrentUser() user: any
+  ) {
+    return this.appointmentsService.assign(id, dto.operatorId, user.id);
+  }
+
+  @Patch(':id/status')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('appointments:write')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Update appointment status' })
+  updateStatus(
+    @Param('id') id: string, 
+    @Body() dto: UpdateStatusDto, 
+    @CurrentUser() user: any
+  ) {
+    return this.appointmentsService.updateStatus(id, dto.status, user.id, dto.reason);
+  }
+
+  @Get('operator/:operatorId')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('appointments:read')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Get operator appointments' })
+  @ApiQuery({ name: 'status', required: false })
+  @ApiQuery({ name: 'skip', required: false })
+  @ApiQuery({ name: 'take', required: false })
+  getOperatorAppointments(
+    @Param('operatorId') operatorId: string,
+    @Query('status') status?: string,
+    @Query('skip') skip?: string,
+    @Query('take') take?: string
+  ) {
+    const options = {
+      status,
+      skip: skip ? parseInt(skip) : 0,
+      take: take ? parseInt(take) : 20
+    };
+    return this.appointmentsService.getOperatorAppointments(operatorId, options);
+  }
+
+  // Additional Features
+  @Post(':id/notes')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('appointments:write')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Add note to appointment' })
+  addNote(
+    @Param('id') id: string,
+    @Body('note') note: string,
+    @Body('isInternal') isInternal: boolean = false,
+    @CurrentUser() user: any
+  ) {
+    return this.appointmentsService.addNote(id, note, isInternal, user.id);
+  }
+
   @Get(':id/reminders')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('appointments:read_own')
@@ -97,12 +269,12 @@ export class AppointmentsController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('appointments:write')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Manually trigger reminder' })
+  @ApiOperation({ summary: 'Send appointment reminder' })
   sendReminder(@Param('id') id: string) {
     return this.appointmentsService.sendReminder(id);
   }
 
-  @Get('export-calendar')
+  @Get('export/calendar')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('appointments:read_own')
   @ApiBearerAuth('JWT-auth')
@@ -111,58 +283,13 @@ export class AppointmentsController {
     return this.appointmentsService.exportCalendar(user.id);
   }
 
-  // Admin/Operator Routes
-  @Get()
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @Permissions('appointments:read')
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'List all appointments' })
-  findAll() {
-    return this.appointmentsService.findAll();
-  }
-
-  @Get('calendar')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @Permissions('appointments:read')
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get calendar view' })
-  getCalendar() {
-    return this.appointmentsService.getCalendar();
-  }
-
-  @Patch(':id/assign')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @Permissions('appointments:assign')
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Assign operator' })
-  assign(@Param('id') id: string, @Body() dto: AssignOperatorDto, @CurrentUser() user: any) {
-    return this.appointmentsService.assign(id, dto.operatorId, user.id);
-  }
-
-  @Patch(':id/status')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @Permissions('appointments:write')
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Update status' })
-  updateStatus(@Param('id') id: string, @Body() dto: UpdateStatusDto, @CurrentUser() user: any) {
-    return this.appointmentsService.updateStatus(id, dto.status, user.id);
-  }
-
+  // Time Slots Management
   @Post('slots')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('appointments:write')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Create time slots' })
+  @ApiOperation({ summary: 'Create time slots (Admin)' })
   createSlots(@Body() dto: CreateTimeSlotsDto) {
     return this.appointmentsService.createSlots(dto);
-  }
-
-  @Get('operator/:operatorId')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @Permissions('appointments:read')
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get operator appointments' })
-  getOperatorAppointments(@Param('operatorId') operatorId: string) {
-    return this.appointmentsService.getOperatorAppointments(operatorId);
   }
 }

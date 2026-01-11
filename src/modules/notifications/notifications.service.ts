@@ -137,4 +137,186 @@ export class NotificationsService {
     });
     return { success: true, message: `Old notifications deleted`, deletedCount: result.affected };
   }
+
+  /**
+   * Send templated email (for invoices, password resets, etc.)
+   */
+  async sendEmail(options: {
+    to: string;
+    subject: string;
+    template?: string;
+    context?: any;
+  }): Promise<void> {
+    try {
+      const htmlContent = this.renderEmailTemplate(options.template, options.context);
+      await this.emailService.sendEmail(
+        options.to,
+        options.subject,
+        htmlContent,
+      );
+    } catch (error) {
+      console.error(`Failed to send email to ${options.to}:`, error);
+      // Don't throw - email delivery shouldn't block application flow
+    }
+  }
+
+  /**
+   * Render email template with context
+   */
+  private renderEmailTemplate(template: string, context: any = {}): string {
+    const templates = {
+      invoice: this.invoiceEmailTemplate,
+      'password-reset': this.passwordResetTemplate,
+      'welcome': this.welcomeTemplate,
+      'confirmation': this.confirmationTemplate,
+    };
+
+    const renderFn = templates[template] || templates['confirmation'];
+    return renderFn(context);
+  }
+
+  /**
+   * Invoice email template
+   */
+  private invoiceEmailTemplate = (context: any): string => `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #f8f9fa; padding: 20px; border-radius: 5px; }
+          .invoice-section { margin: 20px 0; }
+          .amount { font-size: 24px; font-weight: bold; color: #007bff; }
+          .footer { border-top: 1px solid #ddd; padding-top: 20px; margin-top: 40px; font-size: 12px; color: #666; }
+          .button { 
+            display: inline-block; 
+            padding: 10px 20px; 
+            background-color: #007bff; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 5px; 
+            margin-top: 10px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Invoice Received</h1>
+            <p>Hello ${context.userName || 'Customer'},</p>
+          </div>
+
+          <div class="invoice-section">
+            <p>We're pleased to inform you that your payment has been successfully processed.</p>
+            
+            <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px;">
+              <p><strong>Invoice Details:</strong></p>
+              <p>Invoice Number: <strong>${context.invoiceNumber}</strong></p>
+              <p>Date: <strong>${context.date ? new Date(context.date).toLocaleDateString() : 'N/A'}</strong></p>
+              <p>Amount: <span class="amount">${context.amount} ${context.currency}</span></p>
+            </div>
+          </div>
+
+          <div class="invoice-section">
+            <p>You can download your invoice using the button below:</p>
+            <a href="${context.invoiceUrl}" class="button">Download Invoice</a>
+          </div>
+
+          <div class="invoice-section">
+            <p>If you have any questions about this invoice, please don't hesitate to contact our support team.</p>
+          </div>
+
+          <div class="footer">
+            <p><strong>PK SERVIZI S.R.L.</strong></p>
+            <p>Professional Services</p>
+            <p>Email: support@pkservizi.com | Phone: +39 XXX XXX XXXX</p>
+            <p>© 2026 PK SERVIZI. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  /**
+   * Password reset email template
+   */
+  private passwordResetTemplate = (context: any): string => `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .button { 
+            display: inline-block; 
+            padding: 10px 20px; 
+            background-color: #007bff; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 5px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h2>Password Reset Request</h2>
+          <p>Hello ${context.userName},</p>
+          <p>We received a request to reset your password. Click the button below to reset it:</p>
+          <a href="${context.resetUrl}" class="button">Reset Password</a>
+          <p>This link expires in 24 hours.</p>
+          <p>If you didn't request this, please ignore this email.</p>
+        </div>
+      </body>
+    </html>
+  `;
+
+  /**
+   * Welcome email template
+   */
+  private welcomeTemplate = (context: any): string => `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h2>Welcome to PK SERVIZI!</h2>
+          <p>Hello ${context.userName},</p>
+          <p>Thank you for joining PK SERVIZI. Your account is now active.</p>
+          <p>You can now log in and start using our professional services.</p>
+        </div>
+      </body>
+    </html>
+  `;
+
+  /**
+   * Generic confirmation template
+   */
+  private confirmationTemplate = (context: any): string => `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h2>${context.title || 'Notification'}</h2>
+          <p>Hello ${context.userName},</p>
+          <p>${context.message}</p>
+        </div>
+      </body>
+    </html>
+  `;
 }

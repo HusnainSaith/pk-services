@@ -11,6 +11,8 @@ import { IseeRequest } from './entities/isee-request.entity';
 import { Modello730Request } from './entities/modello-730-request.entity';
 import { ImuRequest } from './entities/imu-request.entity';
 import { User } from '../users/entities/user.entity';
+import { UserSubscription } from '../subscriptions/entities/user-subscription.entity';
+import { SubscriptionPlan } from '../subscriptions/entities/subscription-plan.entity';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { UsersModule } from '../users/users.module';
@@ -25,6 +27,8 @@ import { UsersModule } from '../users/users.module';
       Modello730Request,
       ImuRequest,
       User,
+      UserSubscription,
+      SubscriptionPlan,
     ]),
     SubscriptionsModule,
     NotificationsModule,

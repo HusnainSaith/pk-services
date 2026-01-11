@@ -3,7 +3,6 @@ import {
   IsOptional,
   IsDateString,
   IsNumber,
-  IsIn,
   IsUUID,
   MinLength,
   MaxLength,
@@ -13,21 +12,17 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateAppointmentDto {
-  @ApiProperty({ description: 'User ID' })
-  @IsUUID(4, { message: 'User ID must be a valid UUID' })
-  userId: string;
-
   @ApiPropertyOptional({ description: 'Service type ID' })
   @IsOptional()
   @IsUUID(4, { message: 'Service type ID must be a valid UUID' })
   serviceTypeId?: string;
 
-  @ApiPropertyOptional({ description: 'Operator ID' })
+  @ApiPropertyOptional({ description: 'Preferred operator ID' })
   @IsOptional()
   @IsUUID(4, { message: 'Operator ID must be a valid UUID' })
   operatorId?: string;
 
-  @ApiProperty({ description: 'Appointment title' })
+  @ApiProperty({ description: 'Appointment title', example: 'ISEE Consultation' })
   @IsString({ message: 'Title must be a string' })
   @MinLength(3, { message: 'Title must be at least 3 characters long' })
   @MaxLength(255, { message: 'Title cannot exceed 255 characters' })
@@ -39,48 +34,26 @@ export class CreateAppointmentDto {
   @MaxLength(1000, { message: 'Description cannot exceed 1000 characters' })
   description?: string;
 
-  @ApiProperty({ description: 'Appointment date and time' })
+  @ApiProperty({ 
+    description: 'Appointment date and time', 
+    example: '2024-01-15T10:00:00.000Z' 
+  })
   @IsDateString(
     {},
     { message: 'Appointment date must be a valid ISO date string' },
   )
   appointmentDate: string;
 
-  @ApiPropertyOptional({ description: 'Duration in minutes', default: 60 })
-  @IsOptional()
-  @IsNumber({}, { message: 'Duration must be a number' })
-  @Min(15, { message: 'Duration must be at least 15 minutes' })
-  @Max(480, { message: 'Duration cannot exceed 8 hours (480 minutes)' })
-  durationMinutes?: number;
-
-  @ApiPropertyOptional({
-    description: 'Appointment status',
-    enum: [
-      'scheduled',
-      'confirmed',
-      'in_progress',
-      'completed',
-      'cancelled',
-      'no_show',
-    ],
-    default: 'scheduled',
+  @ApiPropertyOptional({ 
+    description: 'Duration in minutes', 
+    default: 60,
+    enum: [30, 60, 90]
   })
   @IsOptional()
-  @IsIn(
-    [
-      'scheduled',
-      'confirmed',
-      'in_progress',
-      'completed',
-      'cancelled',
-      'no_show',
-    ],
-    {
-      message:
-        'Status must be one of: scheduled, confirmed, in_progress, completed, cancelled, no_show',
-    },
-  )
-  status?: string;
+  @IsNumber({}, { message: 'Duration must be a number' })
+  @Min(30, { message: 'Duration must be at least 30 minutes' })
+  @Max(90, { message: 'Duration cannot exceed 90 minutes' })
+  durationMinutes?: number = 60;
 
   @ApiPropertyOptional({ description: 'Appointment location' })
   @IsOptional()
@@ -91,6 +64,6 @@ export class CreateAppointmentDto {
   @ApiPropertyOptional({ description: 'Additional notes' })
   @IsOptional()
   @IsString({ message: 'Notes must be a string' })
-  @MaxLength(1000, { message: 'Notes cannot exceed 1000 characters' })
+  @MaxLength(500, { message: 'Notes cannot exceed 500 characters' })
   notes?: string;
 }

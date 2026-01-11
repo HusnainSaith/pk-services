@@ -7,13 +7,15 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, ILike } from 'typeorm';
+import { Repository, In, ILike, Between } from 'typeorm';
 import { ServiceRequest } from './entities/service-request.entity';
 import { IseeRequest } from './entities/isee-request.entity';
 import { Modello730Request } from './entities/modello-730-request.entity';
 import { ImuRequest } from './entities/imu-request.entity';
 import { RequestStatusHistory } from './entities/request-status-history.entity';
 import { ServiceType } from './entities/service-type.entity';
+import { UserSubscription } from '../subscriptions/entities/user-subscription.entity';
+import { SubscriptionPlan } from '../subscriptions/entities/subscription-plan.entity';
 import { CreateServiceRequestDto } from './dto/create-service-request.dto';
 import { UpdateServiceRequestDto } from './dto/update-service-request.dto';
 import { CreateIseeRequestDto } from './dto/create-isee-request.dto';
@@ -59,10 +61,102 @@ export class ServiceRequestsService {
     private statusHistoryRepository: Repository<RequestStatusHistory>,
     @InjectRepository(ServiceType)
     private serviceTypeRepository: Repository<ServiceType>,
+    @InjectRepository(UserSubscription)
+    private userSubscriptionRepository: Repository<UserSubscription>,
+    @InjectRepository(SubscriptionPlan)
+    private subscriptionPlanRepository: Repository<SubscriptionPlan>,
   ) {}
+
+  // ============================================================================
+  // SUBSCRIPTION & ACCESS CONTROL
+  // ============================================================================
+
+  /**
+   * Check if user has active subscription and access to service
+   * CRITICAL: Enforce subscription requirements per MILSTON M6
+   */
+  private async verifySubscriptionAccess(
+    userId: string,
+    serviceTypeCode: string,
+  ): Promise<{ isValid: boolean; subscription?: UserSubscription; message?: string }> {
+    // Get user's active subscription
+    const subscription = await this.userSubscriptionRepository.findOne({
+      where: { userId, status: 'active' },
+      relations: ['plan'],
+    });
+
+    if (!subscription) {
+      return {
+        isValid: false,
+        message: 'Active subscription required. Please subscribe to use services.',
+      };
+    }
+
+    // Check if subscription has expired
+    const now = new Date();
+    if (subscription.endDate && subscription.endDate < now) {
+      return {
+        isValid: false,
+        message: 'Subscription has expired. Please renew your subscription.',
+      };
+    }
+
+    // Get subscription plan details
+    const plan = subscription.plan;
+    if (!plan || !plan.isActive) {
+      return {
+        isValid: false,
+        message: 'Subscription plan is not active.',
+      };
+    }
+
+    // Check if service is enabled in user's plan (using serviceLimits)
+    // All services are enabled by default unless explicitly disabled in serviceLimits
+    if (plan.serviceLimits && plan.serviceLimits[serviceTypeCode.toLowerCase().replace('_', '')] === 0) {
+      return {
+        isValid: false,
+        message: `Service "${serviceTypeCode}" is not included in your subscription plan.`,
+      };
+    }
+
+    // Check service limits if configured
+    if (plan.serviceLimits && plan.serviceLimits.monthlyRequests) {
+      const thisMonth = new Date();
+      thisMonth.setDate(1);
+      thisMonth.setHours(0, 0, 0, 0);
+
+      const nextMonth = new Date(thisMonth);
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+      const monthlyCount = await this.serviceRequestRepository.count({
+        where: {
+          userId,
+          createdAt: Between(thisMonth, nextMonth),
+        },
+      });
+
+      if (monthlyCount >= plan.serviceLimits.monthlyRequests) {
+        return {
+          isValid: false,
+          message: `Monthly service request limit (${plan.serviceLimits.monthlyRequests}) reached.`,
+        };
+      }
+    }
+
+    return {
+      isValid: true,
+      subscription,
+      message: 'Subscription access verified',
+    };
+  }
+
+  // ============================================================================
+  // SERVICE REQUEST LIFECYCLE
+  // ============================================================================
 
   /**
    * Create a new service request (Draft)
+   * CRITICAL: Only allowed for users with active subscription
    */
   async create(dto: CreateServiceRequestDto, userId: string, serviceTypeCode?: string): Promise<any> {
     try {
@@ -385,6 +479,7 @@ export class ServiceRequestsService {
     try {
       const request = await this.serviceRequestRepository.findOne({
         where: { id },
+        relations: ['serviceType'],
       });
 
       if (!request) {
@@ -399,6 +494,17 @@ export class ServiceRequestsService {
 
       if (request.userId !== userId) {
         throw new ForbiddenException('Not authorized to submit this request');
+      }
+
+      // CRITICAL: Verify subscription before allowing submission (MILSTON M6)
+      const serviceTypeCode = request.serviceType?.code || 'ISEE';
+      const subscriptionCheck = await this.verifySubscriptionAccess(
+        userId,
+        serviceTypeCode,
+      );
+
+      if (!subscriptionCheck.isValid) {
+        throw new ForbiddenException(subscriptionCheck.message);
       }
 
       // Update status

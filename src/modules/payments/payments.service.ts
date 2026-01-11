@@ -11,13 +11,11 @@ import { UpdatePaymentDto } from './dto/update-payment.dto';
  * Handles payment management, Stripe integration, and payment processing
  * Extends BaseService for CRUD operations
  */
-export class PaymentsService extends BaseService<Payment, CreatePaymentDto, UpdatePaymentDto> {
+export class PaymentsService {
   constructor(
     @InjectRepository(Payment)
     protected readonly paymentRepository: Repository<Payment>,
-  ) {
-    super(paymentRepository);
-  }
+  ) {}
 
   /**
    * Create payment with default status
@@ -27,13 +25,16 @@ export class PaymentsService extends BaseService<Payment, CreatePaymentDto, Upda
       status: 'pending',
       ...createPaymentDto,
     };
-    return super.create(dto);
+    const entity = this.paymentRepository.create(dto);
+    const saved = await this.paymentRepository.save(entity);
+    return Array.isArray(saved) ? saved[0] : saved;
   }
 
   /**
    * Find all payments (wrapper for BaseService)
    */
-  async findAll(page = 1, limit = 10) {
+  async findAll(options?: { page?: number; limit?: number }) {
+    const { page = 1, limit = 10 } = options || {};
     const [data, total] = await this.paymentRepository.findAndCount({
       skip: (page - 1) * limit,
       take: limit,
@@ -93,7 +94,10 @@ export class PaymentsService extends BaseService<Payment, CreatePaymentDto, Upda
     status: string,
     transactionId?: string,
   ): Promise<Payment> {
-    await this.findById(id);
+    const payment = await this.paymentRepository.findOne({ where: { id } });
+    if (!payment) {
+      throw new Error(`Payment ${id} not found`);
+    }
 
     const updateData: any = { status };
     if (transactionId) {
@@ -104,7 +108,7 @@ export class PaymentsService extends BaseService<Payment, CreatePaymentDto, Upda
     }
 
     await this.paymentRepository.update(id, updateData);
-    return this.findById(id);
+    return this.paymentRepository.findOne({ where: { id } }) as Promise<Payment>;
   }
 
   /**
@@ -166,7 +170,10 @@ export class PaymentsService extends BaseService<Payment, CreatePaymentDto, Upda
    * Process refund for completed payment
    */
   async processRefund(id: string, refundAmount?: number): Promise<Payment> {
-    const payment = await this.findById(id);
+    const payment = await this.paymentRepository.findOne({ where: { id } });
+    if (!payment) {
+      throw new Error(`Payment ${id} not found`);
+    }
 
     if (payment.status !== 'completed') {
       throw new BadRequestException('Can only refund completed payments');
@@ -188,7 +195,10 @@ export class PaymentsService extends BaseService<Payment, CreatePaymentDto, Upda
    * Generate receipt for payment
    */
   async downloadReceipt(id: string, userId: string): Promise<any> {
-    const payment = await this.findById(id);
+    const payment = await this.paymentRepository.findOne({ where: { id } });
+    if (!payment) {
+      throw new Error(`Payment ${id} not found`);
+    }
     
     if (payment.userId !== userId) {
       throw new Error('Payment not found');
@@ -205,7 +215,10 @@ export class PaymentsService extends BaseService<Payment, CreatePaymentDto, Upda
    * Generate invoice for payment
    */
   async generateInvoice(id: string, userId: string): Promise<any> {
-    const payment = await this.findById(id);
+    const payment = await this.paymentRepository.findOne({ where: { id } });
+    if (!payment) {
+      throw new Error(`Payment ${id} not found`);
+    }
     
     if (payment.userId !== userId) {
       throw new Error('Payment not found');
@@ -223,7 +236,10 @@ export class PaymentsService extends BaseService<Payment, CreatePaymentDto, Upda
    * Resend receipt email
    */
   async resendReceipt(id: string, userId: string): Promise<any> {
-    const payment = await this.findById(id);
+    const payment = await this.paymentRepository.findOne({ where: { id } });
+    if (!payment) {
+      throw new Error(`Payment ${id} not found`);
+    }
     
     if (payment.userId !== userId) {
       throw new Error('Payment not found');

@@ -1,13 +1,18 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
 import { OverrideLimitsDto } from './dto/override-limits.dto';
 import { SubscriptionPlan } from './entities/subscription-plan.entity';
 import { UserSubscription } from './entities/user-subscription.entity';
 import { Payment } from '../payments/entities/payment.entity';
+import { User } from '../users/entities/user.entity';
+import { StripeService } from '../payments/stripe.service';
 
 @Injectable()
 export class SubscriptionsService {
+  private readonly logger = new Logger(SubscriptionsService.name);
+
   constructor(
     @InjectRepository(SubscriptionPlan)
     private planRepository: Repository<SubscriptionPlan>,
@@ -15,6 +20,10 @@ export class SubscriptionsService {
     private userSubscriptionRepository: Repository<UserSubscription>,
     @InjectRepository(Payment)
     private paymentRepository: Repository<Payment>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+    private stripeService: StripeService,
+    private configService: ConfigService,
   ) {}
 
   async getAvailablePlans(): Promise<any> {
@@ -31,13 +40,115 @@ export class SubscriptionsService {
   }
 
   async createCheckout(dto: any, userId: string): Promise<any> {
-    const subscription = this.userSubscriptionRepository.create({
-      ...dto,
-      userId,
-      status: 'pending',
-    });
-    const saved = await this.userSubscriptionRepository.save(subscription);
-    return { success: true, message: 'Checkout session created', data: saved };
+    try {
+      // Get the subscription plan
+      const plan = await this.planRepository.findOne({ where: { id: dto.planId } });
+      if (!plan) {
+        throw new BadRequestException('Subscription plan not found');
+      }
+
+      // Get user details for Stripe
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+      if (!user) {
+        throw new BadRequestException('User not found');
+      }
+
+      this.logger.log(`Creating checkout for user ${userId} (${user.email}) - Plan: ${plan.name}`);
+
+      // Determine billing cycle and price
+      const billingCycle = dto.billingCycle || 'monthly';
+      const price = billingCycle === 'annual' ? plan.priceAnnual : plan.priceMonthly;
+
+      // Map plan to Stripe Price ID (you can configure these in environment or database)
+      // For now, using a simple mapping based on plan name and billing cycle
+      const stripePriceId = this.getStripePriceId(plan, billingCycle);
+
+      if (!stripePriceId) {
+        this.logger.warn(`No Stripe Price ID configured for plan ${plan.name} (${billingCycle})`);
+        throw new BadRequestException('This subscription plan is not available for purchase at the moment');
+      }
+
+      // Create user subscription with pending status
+      const subscription = this.userSubscriptionRepository.create({
+        userId,
+        planId: dto.planId,
+        status: 'pending',
+        billingCycle,
+        startDate: new Date(),
+        autoRenew: true,
+      });
+      const savedSubscription = await this.userSubscriptionRepository.save(subscription);
+
+      // Create Stripe checkout session
+      const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
+      const session = await this.stripeService.createCheckoutSession({
+        priceId: stripePriceId,
+        userId: user.id,
+        userEmail: user.email,
+        planId: plan.id,
+        billingCycle,
+        successUrl: `${frontendUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancelUrl: `${frontendUrl}/payment/cancel`,
+        metadata: {
+          subscriptionId: savedSubscription.id,
+          planName: plan.name,
+          subscriptionPlan: plan.name,
+        },
+      });
+
+      this.logger.log(`Stripe checkout session created: ${session.id}`);
+
+      // Store Stripe session ID in metadata (will be updated to subscription ID by webhook)
+      await this.userSubscriptionRepository.update(savedSubscription.id, {
+        stripeSubscriptionId: session.id, // Temporarily store session ID
+      });
+
+      return {
+        success: true,
+        message: 'Checkout session created successfully',
+        data: {
+          subscriptionId: savedSubscription.id,
+          checkoutUrl: session.url,
+          sessionId: session.id,
+          planName: plan.name,
+          price,
+          currency: 'eur',
+          billingCycle,
+        },
+      };
+    } catch (error) {
+      this.logger.error(`Failed to create checkout: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * Map subscription plan to Stripe Price ID
+   * TODO: Store these in database or environment variables
+   */
+  private getStripePriceId(plan: SubscriptionPlan, billingCycle: string): string | null {
+    // You need to create these Price IDs in your Stripe Dashboard
+    // and configure them here or in the database
+    const priceMapping = {
+      'Basic': {
+        monthly: this.configService.get('STRIPE_PRICE_BASIC_MONTHLY'),
+        annual: this.configService.get('STRIPE_PRICE_BASIC_ANNUAL'),
+      },
+      'Professional': {
+        monthly: this.configService.get('STRIPE_PRICE_PROFESSIONAL_MONTHLY'),
+        annual: this.configService.get('STRIPE_PRICE_PROFESSIONAL_ANNUAL'),
+      },
+      'Premium': {
+        monthly: this.configService.get('STRIPE_PRICE_PREMIUM_MONTHLY'),
+        annual: this.configService.get('STRIPE_PRICE_PREMIUM_ANNUAL'),
+      },
+      'Free Trial': {
+        monthly: null, // Free plans don't need Stripe
+        annual: null,
+      },
+    };
+
+    return priceMapping[plan.name]?.[billingCycle] || null;
   }
 
   async cancelSubscription(userId: string): Promise<any> {

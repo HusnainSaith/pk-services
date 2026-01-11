@@ -1,11 +1,11 @@
 import { Logger } from '@nestjs/common';
-import { SecurityUtil } from './security.util';
+import { ValidationUtil } from './validation.util';
 
 export class SafeLogger extends Logger {
   static log(message: any, context?: string) {
     const sanitizedMessage =
       typeof message === 'string'
-        ? SecurityUtil.sanitizeLogMessage(message)
+        ? ValidationUtil.sanitizeLogMessage(message)
         : message;
     super.log(sanitizedMessage, context);
   }
@@ -13,10 +13,10 @@ export class SafeLogger extends Logger {
   static error(message: any, trace?: string, context?: string) {
     const sanitizedMessage =
       typeof message === 'string'
-        ? SecurityUtil.sanitizeLogMessage(message)
+        ? ValidationUtil.sanitizeLogMessage(message)
         : message;
     const sanitizedTrace = trace
-      ? SecurityUtil.sanitizeLogMessage(trace)
+      ? ValidationUtil.sanitizeLogMessage(trace)
       : trace;
     super.error(sanitizedMessage, sanitizedTrace, context);
   }
@@ -24,7 +24,7 @@ export class SafeLogger extends Logger {
   static warn(message: any, context?: string) {
     const sanitizedMessage =
       typeof message === 'string'
-        ? SecurityUtil.sanitizeLogMessage(message)
+        ? ValidationUtil.sanitizeLogMessage(message)
         : message;
     super.warn(sanitizedMessage, context);
   }

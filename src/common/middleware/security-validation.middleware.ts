@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
-import { SecurityUtil } from '../utils/security.util';
+import { ValidationUtil } from '../utils/validation.util';
 
 @Injectable()
 export class SecurityValidationMiddleware implements NestMiddleware {
@@ -13,15 +13,15 @@ export class SecurityValidationMiddleware implements NestMiddleware {
       if (req.params) {
         for (const [key, value] of Object.entries(req.params)) {
           if (key === 'id' || key.endsWith('Id')) {
-            SecurityUtil.validateId(value as string);
+            ValidationUtil.validateId(value as string);
           }
         }
       }
       if (req.body && typeof req.body === 'object') {
-        SecurityUtil.validateObject(req.body);
+        ValidationUtil.validateObject(req.body);
       }
       if (req.query && typeof req.query === 'object') {
-        SecurityUtil.validateObject(req.query);
+        ValidationUtil.validateObject(req.query);
       }
 
       next();
