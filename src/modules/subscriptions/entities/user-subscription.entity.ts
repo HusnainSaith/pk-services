@@ -23,7 +23,7 @@ export class UserSubscription {
   @Column({ name: 'plan_id' })
   planId: string;
 
-  @Column({ length: 20, default: 'active' })
+  @Column({ length: 20, default: 'pending' })
   status: string;
 
   @Column({ length: 10, default: 'monthly', name: 'billing_cycle' })

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
 import { Notification } from './entities/notification.entity';
@@ -7,6 +7,8 @@ import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class NotificationsService {
+  private readonly logger = new Logger(NotificationsService.name);
+
   constructor(
     @InjectRepository(Notification)
     private notificationRepository: Repository<Notification>,
@@ -33,16 +35,57 @@ export class NotificationsService {
   async markAsRead(id: string, userId: string): Promise<any> {
     await this.notificationRepository.update(
       { id, userId },
-      { readAt: new Date() },
+      { readAt: new Date(), isRead: true },
     );
-    const updated = await this.notificationRepository.findOne({ where: { id } });
-    return { success: true, message: 'Notification marked as read', data: updated };
+    const updated = await this.notificationRepository.findOne({
+      where: { id },
+    });
+    return {
+      success: true,
+      message: 'Notification marked as read',
+      data: updated,
+    };
+  }
+
+  async markEmailAsRead(notificationId: string): Promise<any> {
+    // Mark notification as read when email tracking pixel is loaded
+    this.logger.log(
+      'Email tracking pixel loaded for notification: ' + notificationId,
+    );
+
+    const notification = await this.notificationRepository.findOne({
+      where: { id: notificationId },
+    });
+
+    if (notification) {
+      this.logger.log(
+        'Found notification: ' +
+          notificationId +
+          ', current read_at: ' +
+          notification.readAt,
+      );
+
+      if (!notification.readAt) {
+        notification.readAt = new Date();
+        notification.isRead = true;
+        await this.notificationRepository.save(notification);
+        this.logger.log('Email marked as read at: ' + notification.readAt + ', is_read set to true');
+      } else {
+        this.logger.log(
+          'Email was already marked as read at: ' + notification.readAt,
+        );
+      }
+    } else {
+      this.logger.warn('Notification not found: ' + notificationId);
+    }
+
+    return { success: true };
   }
 
   async markAllAsRead(userId: string): Promise<any> {
     await this.notificationRepository.update(
       { userId, readAt: null },
-      { readAt: new Date() },
+      { readAt: new Date(), isRead: true },
     );
     return { success: true, message: 'All notifications marked as read' };
   }
@@ -56,9 +99,9 @@ export class NotificationsService {
     // Validate user exists
     const user = await this.userRepository.findOne({
       where: { id: dto.userId },
-      select: ['id', 'email']
+      select: ['id', 'email'],
     });
-    
+
     if (!user) {
       return { success: false, message: 'User not found' };
     }
@@ -76,14 +119,39 @@ export class NotificationsService {
     const userEmail = dto.userEmail || user.email;
     if (userEmail) {
       setImmediate(() => {
-        this.emailService.sendEmail(
-          userEmail,
-          dto.title,
-          `<p>${dto.message}</p>`,
-          dto.message
-        ).catch(error => {
-          console.error('Failed to send email:', error);
-        });
+        let htmlContent = dto.htmlContent || `<p>${dto.message}</p>`;
+
+        // Add tracking pixel to HTML content if notification ID exists
+        if (saved.id) {
+          const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
+          const trackingPixel = `<img src="${backendUrl}/api/v1/notifications/track/${saved.id}" width="1" height="1" style="display:none;" alt="" />`;
+
+          this.logger.log(
+            'Adding tracking pixel for notification: ' + saved.id,
+          );
+          this.logger.log(
+            'Tracking URL: ' +
+              backendUrl +
+              '/api/v1/notifications/track/' +
+              saved.id,
+          );
+
+          // Insert tracking pixel before closing body tag, or append if no body tag
+          if (htmlContent.includes('</body>')) {
+            htmlContent = htmlContent.replace(
+              '</body>',
+              trackingPixel + '</body>',
+            );
+          } else {
+            htmlContent = htmlContent + trackingPixel;
+          }
+        }
+
+        this.emailService
+          .sendEmail(userEmail, dto.title, htmlContent, dto.message)
+          .catch((error) => {
+            console.error('Failed to send email:', error);
+          });
       });
     }
 
@@ -92,7 +160,7 @@ export class NotificationsService {
 
   async broadcast(dto: any): Promise<any> {
     const users = await this.userRepository.find({
-      select: ['id', 'email']
+      select: ['id', 'email'],
     });
 
     const notifications = users.map((user) =>
@@ -109,21 +177,27 @@ export class NotificationsService {
 
     // Send emails asynchronously
     setImmediate(() => {
-      users.forEach(user => {
+      users.forEach((user) => {
         if (user.email) {
-          this.emailService.sendEmail(
-            user.email,
-            dto.title,
-            `<p>${dto.message}</p>`,
-            dto.message
-          ).catch(error => {
-            console.error(`Failed to send email to ${user.email}:`, error);
-          });
+          this.emailService
+            .sendEmail(
+              user.email,
+              dto.title,
+              `<p>${dto.message}</p>`,
+              dto.message,
+            )
+            .catch((error) => {
+              console.error(`Failed to send email to ${user.email}:`, error);
+            });
         }
       });
     });
 
-    return { success: true, message: 'Notification broadcasted', count: notifications.length };
+    return {
+      success: true,
+      message: 'Notification broadcasted',
+      count: notifications.length,
+    };
   }
 
   async sendToRole(dto: any): Promise<any> {
@@ -135,7 +209,11 @@ export class NotificationsService {
     const result = await this.notificationRepository.delete({
       createdAt: LessThan(cutoffDate),
     });
-    return { success: true, message: `Old notifications deleted`, deletedCount: result.affected };
+    return {
+      success: true,
+      message: `Old notifications deleted`,
+      deletedCount: result.affected,
+    };
   }
 
   /**
@@ -148,7 +226,10 @@ export class NotificationsService {
     context?: any;
   }): Promise<void> {
     try {
-      const htmlContent = this.renderEmailTemplate(options.template, options.context);
+      const htmlContent = this.renderEmailTemplate(
+        options.template,
+        options.context,
+      );
       await this.emailService.sendEmail(
         options.to,
         options.subject,
@@ -167,8 +248,8 @@ export class NotificationsService {
     const templates = {
       invoice: this.invoiceEmailTemplate,
       'password-reset': this.passwordResetTemplate,
-      'welcome': this.welcomeTemplate,
-      'confirmation': this.confirmationTemplate,
+      welcome: this.welcomeTemplate,
+      confirmation: this.confirmationTemplate,
     };
 
     const renderFn = templates[template] || templates['confirmation'];

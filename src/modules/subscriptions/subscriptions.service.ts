@@ -78,6 +78,9 @@ export class SubscriptionsService {
         autoRenew: true,
       });
       const savedSubscription = await this.userSubscriptionRepository.save(subscription);
+      
+      this.logger.log(`Subscription created with status: ${savedSubscription.status}`);
+      this.logger.log(`Subscription ID: ${savedSubscription.id}`);
 
       // Create Stripe checkout session
       const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3000';

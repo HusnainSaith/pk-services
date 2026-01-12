@@ -7,6 +7,7 @@ import {
   Param,
   Body,
   UseGuards,
+  Res,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
@@ -20,11 +21,40 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @ApiTags('Notifications')
 @Controller('notifications')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
-  // Customer Routes
+  // Email tracking pixel endpoint - NO AUTH REQUIRED (must be before other routes)
+  @Get('track/:notificationId')
+  @ApiOperation({ summary: 'Track email open' })
+  async trackEmailOpen(
+    @Param('notificationId') notificationId: string,
+    @Res() res: any,
+  ) {
+    try {
+      await this.notificationsService.markEmailAsRead(notificationId);
+    } catch (error) {
+      // Silently fail - don't break email rendering
+    }
+
+    // Return a 1x1 transparent pixel
+    const pixel = Buffer.from(
+      'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+      'base64',
+    );
+    res.set({
+      'Content-Type': 'image/gif',
+      'Content-Length': pixel.length,
+      'Cache-Control':
+        'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+    });
+    return res.send(pixel);
+  }
+
+  // Customer Routes (with authentication)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Get('my')
   @Permissions('notifications:read_own')
   @ApiBearerAuth('JWT-auth')
@@ -33,6 +63,8 @@ export class NotificationsController {
     return this.notificationsService.findByUser(user.id);
   }
 
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Get('unread-count')
   @Permissions('notifications:read_own')
   @ApiBearerAuth('JWT-auth')
@@ -41,6 +73,8 @@ export class NotificationsController {
     return this.notificationsService.getUnreadCount(user.id);
   }
 
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Patch(':id/read')
   @Permissions('notifications:write_own')
   @ApiBearerAuth('JWT-auth')
@@ -49,6 +83,8 @@ export class NotificationsController {
     return this.notificationsService.markAsRead(id, user.id);
   }
 
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Patch('mark-all-read')
   @Permissions('notifications:write_own')
   @ApiBearerAuth('JWT-auth')
@@ -57,6 +93,7 @@ export class NotificationsController {
     return this.notificationsService.markAllAsRead(user.id);
   }
 
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Delete(':id')
   @Permissions('notifications:delete_own')
   @ApiBearerAuth('JWT-auth')
@@ -66,6 +103,7 @@ export class NotificationsController {
   }
 
   // Admin Routes
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Post('send')
   @Permissions('notifications:write')
   @ApiBearerAuth('JWT-auth')
@@ -74,6 +112,7 @@ export class NotificationsController {
     return this.notificationsService.send(dto);
   }
 
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Post('broadcast')
   @Permissions('notifications:broadcast')
   @ApiBearerAuth('JWT-auth')
@@ -82,6 +121,7 @@ export class NotificationsController {
     return this.notificationsService.broadcast(dto);
   }
 
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Post('send-to-role')
   @Permissions('notifications:write')
   @ApiBearerAuth('JWT-auth')

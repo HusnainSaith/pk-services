@@ -139,10 +139,10 @@ export class InvoiceService {
 
       await this.invoiceRepository.save(invoice);
 
-      // Send email with invoice
-      await this.sendInvoiceEmail(invoice);
+      // Note: Email is sent by webhook handler, not here
+      // This prevents duplicate emails when payment is completed
 
-      this.logger.log(`PDF generated and invoice sent for ${invoice.id}`);
+      this.logger.log(`PDF generated for invoice ${invoice.id}`);
     } catch (error) {
       this.logger.error(
         `Failed to generate PDF for invoice ${invoice.id}: ${error.message}`,
