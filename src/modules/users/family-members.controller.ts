@@ -11,9 +11,18 @@ import {
   UploadedFile,
   UploadedFiles,
 } from '@nestjs/common';
-import { FileInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
+import {
+  FileInterceptor,
+  FileFieldsInterceptor,
+} from '@nestjs/platform-express';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiConsumes,
+} from '@nestjs/swagger';
 import { FamilyMembersService } from './family-members.service';
+import { UserRequest } from '../../common/interfaces/user-request.interface';
 import { CreateFamilyMemberDto } from './dto/create-family-member.dto';
 import { UpdateFamilyMemberDto } from './dto/update-family-member.dto';
 import { UploadDocumentDto } from '../documents/dto/upload-document.dto';
@@ -31,83 +40,97 @@ export class FamilyMembersController {
 
   // Customer Routes
   @Get()
-  @Permissions('family_members:read_own')
+  @Permissions('family-members:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'List own family members' })
-  findMy(@CurrentUser() user: any) {
+  @ApiOperation({ summary: '[Customer] List own family members' })
+  findMy(@CurrentUser() user: UserRequest) {
     return this.familyMembersService.findByUser(user.id);
   }
 
   @Post()
-  @Permissions('family_members:write_own')
+  @Permissions('family-members:create')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Add family member' })
-  create(@Body() dto: CreateFamilyMemberDto, @CurrentUser() user: any) {
+  @ApiOperation({ summary: '[Customer] Add family member' })
+  create(@Body() dto: CreateFamilyMemberDto, @CurrentUser() user: UserRequest) {
     return this.familyMembersService.create(dto, user.id);
   }
 
   @Get(':id')
-  @Permissions('family_members:read_own')
+  @Permissions('family-members:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get family member' })
-  findOne(@Param('id') id: string, @CurrentUser() user: any) {
+  @ApiOperation({ summary: '[Customer] Get family member details' })
+  findOne(@Param('id') id: string, @CurrentUser() user: UserRequest) {
     return this.familyMembersService.findOne(user.id, id);
   }
 
   @Put(':id')
-  @Permissions('family_members:write_own')
+  @Permissions('family-members:update')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Update family member' })
-  update(@Param('id') id: string, @Body() dto: UpdateFamilyMemberDto, @CurrentUser() user: any) {
+  @ApiOperation({ summary: '[Customer] Update family member' })
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateFamilyMemberDto,
+    @CurrentUser() user: UserRequest,
+  ) {
     return this.familyMembersService.update(id, dto, user.id);
   }
 
   @Delete(':id')
-  @Permissions('family_members:delete_own')
+  @Permissions('family-members:delete')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Delete family member' })
-  remove(@Param('id') id: string, @CurrentUser() user: any) {
+  @ApiOperation({ summary: '[Customer] Delete family member' })
+  remove(@Param('id') id: string, @CurrentUser() user: UserRequest) {
     return this.familyMembersService.remove(id, user.id);
   }
 
   // Extended Operations - Document Management
   @Get(':id/documents')
-  @Permissions('family_members:read_own')
+  @Permissions('family-members:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get documents for family member' })
-  getFamilyMemberDocuments(@Param('id') id: string, @CurrentUser() user: any) {
+  @ApiOperation({ summary: '[Customer] Get documents for family member' })
+  getFamilyMemberDocuments(
+    @Param('id') id: string,
+    @CurrentUser() user: UserRequest,
+  ) {
     return this.familyMembersService.getFamilyMemberDocuments(id, user.id);
   }
 
   @Post(':id/documents')
-  @Permissions('family_members:write_own')
+  @Permissions('family-members:update')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Upload document for family member' })
+  @ApiOperation({ summary: '[Customer] Upload document for family member' })
   @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FileFieldsInterceptor([
-    { name: 'identityDocument', maxCount: 1 },
-    { name: 'fiscalCode', maxCount: 1 },
-    { name: 'birthCertificate', maxCount: 1 },
-    { name: 'marriageCertificate', maxCount: 1 },
-    { name: 'dependencyDocuments', maxCount: 1 },
-    { name: 'disabilityCertificates', maxCount: 1 },
-    { name: 'studentEnrollment', maxCount: 1 },
-    { name: 'incomeDocuments', maxCount: 1 },
-  ]))
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'identityDocument', maxCount: 1 },
+      { name: 'fiscalCode', maxCount: 1 },
+      { name: 'birthCertificate', maxCount: 1 },
+      { name: 'marriageCertificate', maxCount: 1 },
+      { name: 'dependencyDocuments', maxCount: 1 },
+      { name: 'disabilityCertificates', maxCount: 1 },
+      { name: 'studentEnrollment', maxCount: 1 },
+      { name: 'incomeDocuments', maxCount: 1 },
+    ]),
+  )
   uploadFamilyMemberDocument(
     @Param('id') id: string,
     @UploadedFiles() files: { [key: string]: Express.Multer.File[] },
     @Body() dto: UploadFamilyMemberDocumentsDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: UserRequest,
   ) {
-    return this.familyMembersService.uploadFamilyMemberDocuments(id, files, dto, user.id);
+    return this.familyMembersService.uploadFamilyMemberDocuments(
+      id,
+      files,
+      dto,
+      user.id,
+    );
   }
 
   // Admin Routes
   @Get('user/:userId')
   @Permissions('family_members:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'List user\'s family members' })
+  @ApiOperation({ summary: "[Admin] List user's family members" })
   findByUser(@Param('userId') userId: string) {
     return this.familyMembersService.findByUser(userId);
   }

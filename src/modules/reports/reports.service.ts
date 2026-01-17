@@ -23,12 +23,13 @@ export class ReportsService {
   ) {}
 
   async getDashboard(): Promise<any> {
-    const [totalUsers, totalRequests, totalAppointments, activeSubscriptions] = await Promise.all([
-      this.userRepository.count(),
-      this.serviceRequestRepository.count(),
-      this.appointmentRepository.count(),
-      this.userSubscriptionRepository.count({ where: { status: 'active' } }),
-    ]);
+    const [totalUsers, totalRequests, totalAppointments, activeSubscriptions] =
+      await Promise.all([
+        this.userRepository.count(),
+        this.serviceRequestRepository.count(),
+        this.appointmentRepository.count(),
+        this.userSubscriptionRepository.count({ where: { status: 'active' } }),
+      ]);
 
     const totalRevenue = await this.paymentRepository
       .createQueryBuilder('payment')
@@ -68,7 +69,10 @@ export class ReportsService {
     return {
       success: true,
       data: {
-        byStatus: byStatus.map((s) => ({ status: s.status, count: parseInt(s.count) })),
+        byStatus: byStatus.map((s) => ({
+          status: s.status,
+          count: parseInt(s.count),
+        })),
         byType: byType.map((t) => ({ type: t.type, count: parseInt(t.count) })),
       },
     };
@@ -79,34 +83,35 @@ export class ReportsService {
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
     const yearStart = new Date(today.getFullYear(), 0, 1);
 
-    const [revenueToday, revenueMonth, revenueYear, paymentMethods] = await Promise.all([
-      this.paymentRepository
-        .createQueryBuilder('payment')
-        .select('COALESCE(SUM(payment.amount), 0)', 'total')
-        .where('DATE(payment.createdAt) = CURRENT_DATE')
-        .andWhere('payment.status = :status', { status: 'completed' })
-        .getRawOne(),
-      this.paymentRepository
-        .createQueryBuilder('payment')
-        .select('COALESCE(SUM(payment.amount), 0)', 'total')
-        .where('payment.createdAt >= :start', { start: monthStart })
-        .andWhere('payment.status = :status', { status: 'completed' })
-        .getRawOne(),
-      this.paymentRepository
-        .createQueryBuilder('payment')
-        .select('COALESCE(SUM(payment.amount), 0)', 'total')
-        .where('payment.createdAt >= :start', { start: yearStart })
-        .andWhere('payment.status = :status', { status: 'completed' })
-        .getRawOne(),
-      this.paymentRepository
-        .createQueryBuilder('payment')
-        .select('payment.paymentMethod', 'method')
-        .addSelect('COUNT(payment.id)', 'count')
-        .addSelect('SUM(payment.amount)', 'total')
-        .where('payment.status = :status', { status: 'completed' })
-        .groupBy('payment.paymentMethod')
-        .getRawMany(),
-    ]);
+    const [revenueToday, revenueMonth, revenueYear, paymentMethods] =
+      await Promise.all([
+        this.paymentRepository
+          .createQueryBuilder('payment')
+          .select('COALESCE(SUM(payment.amount), 0)', 'total')
+          .where('DATE(payment.createdAt) = CURRENT_DATE')
+          .andWhere('payment.status = :status', { status: 'completed' })
+          .getRawOne(),
+        this.paymentRepository
+          .createQueryBuilder('payment')
+          .select('COALESCE(SUM(payment.amount), 0)', 'total')
+          .where('payment.createdAt >= :start', { start: monthStart })
+          .andWhere('payment.status = :status', { status: 'completed' })
+          .getRawOne(),
+        this.paymentRepository
+          .createQueryBuilder('payment')
+          .select('COALESCE(SUM(payment.amount), 0)', 'total')
+          .where('payment.createdAt >= :start', { start: yearStart })
+          .andWhere('payment.status = :status', { status: 'completed' })
+          .getRawOne(),
+        this.paymentRepository
+          .createQueryBuilder('payment')
+          .select('payment.paymentMethod', 'method')
+          .addSelect('COUNT(payment.id)', 'count')
+          .addSelect('SUM(payment.amount)', 'total')
+          .where('payment.status = :status', { status: 'completed' })
+          .groupBy('payment.paymentMethod')
+          .getRawMany(),
+      ]);
 
     return {
       success: true,
@@ -167,17 +172,63 @@ export class ReportsService {
         completed,
         cancelled,
         completionRate: ((completed / (total || 1)) * 100).toFixed(2),
-        byStatus: byStatus.map((s) => ({ status: s.status, count: parseInt(s.count) })),
+        byStatus: byStatus.map((s) => ({
+          status: s.status,
+          count: parseInt(s.count),
+        })),
       },
     };
   }
 
   async exportReportData(): Promise<any> {
+    // Use query builders with select to limit fields and improve performance
     const [users, requests, appointments, payments] = await Promise.all([
-      this.userRepository.find({ relations: ['role'] }),
-      this.serviceRequestRepository.find({ relations: ['user', 'serviceType'] }),
-      this.appointmentRepository.find({ relations: ['user'] }),
-      this.paymentRepository.find({ relations: ['user'] }),
+      this.userRepository
+        .createQueryBuilder('user')
+        .leftJoin('user.role', 'role')
+        .select([
+          'user.id',
+          'user.fullName',
+          'user.email',
+          'user.isActive',
+          'user.createdAt',
+          'role.name',
+        ])
+        .getMany(),
+      this.serviceRequestRepository
+        .createQueryBuilder('request')
+        .leftJoin('request.user', 'user')
+        .leftJoin('request.serviceType', 'serviceType')
+        .select([
+          'request.id',
+          'request.status',
+          'request.priority',
+          'request.createdAt',
+          'user.fullName',
+          'serviceType.name',
+        ])
+        .getMany(),
+      this.appointmentRepository
+        .createQueryBuilder('appointment')
+        .leftJoin('appointment.user', 'user')
+        .select([
+          'appointment.id',
+          'appointment.scheduledDate',
+          'appointment.status',
+          'user.fullName',
+        ])
+        .getMany(),
+      this.paymentRepository
+        .createQueryBuilder('payment')
+        .leftJoin('payment.user', 'user')
+        .select([
+          'payment.id',
+          'payment.amount',
+          'payment.status',
+          'payment.createdAt',
+          'user.fullName',
+        ])
+        .getMany(),
     ]);
 
     return {
@@ -206,7 +257,14 @@ export class ReportsService {
       .where('us.status = :status', { status: 'active' })
       .getRawOne();
 
-    const churnRate = total > 0 ? ((await this.userSubscriptionRepository.count({ where: { status: 'cancelled' } })) / total) * 100 : 0;
+    const churnRate =
+      total > 0
+        ? ((await this.userSubscriptionRepository.count({
+            where: { status: 'cancelled' },
+          })) /
+            total) *
+          100
+        : 0;
 
     return {
       success: true,
@@ -215,7 +273,8 @@ export class ReportsService {
         activeSubscriptions: active,
         churnRate: parseFloat(churnRate.toFixed(2)),
         monthlyRecurringRevenue: parseFloat(mrr?.total || 0),
-        averageRevenuePerUser: total > 0 ? parseFloat(((mrr?.total || 0) / total).toFixed(2)) : 0,
+        averageRevenuePerUser:
+          total > 0 ? parseFloat(((mrr?.total || 0) / total).toFixed(2)) : 0,
       },
     };
   }
@@ -248,8 +307,14 @@ export class ReportsService {
         monthlyActiveUsers: monthlyActive,
         averageSessionDuration: 25,
         topFeatures: [
-          { feature: 'Service Requests', usage: await this.serviceRequestRepository.count() },
-          { feature: 'Appointments', usage: await this.appointmentRepository.count() },
+          {
+            feature: 'Service Requests',
+            usage: await this.serviceRequestRepository.count(),
+          },
+          {
+            feature: 'Appointments',
+            usage: await this.appointmentRepository.count(),
+          },
           { feature: 'Documents', usage: 70 },
         ],
       },
@@ -261,16 +326,17 @@ export class ReportsService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const [totalUsers, totalServiceRequests, pendingRequests, completedToday] = await Promise.all([
-      this.userRepository.count(),
-      this.serviceRequestRepository.count(),
-      this.serviceRequestRepository.count({ where: { status: 'submitted' } }),
-      this.serviceRequestRepository.count({
-        where: {
-          status: 'completed',
-        },
-      }),
-    ]);
+    const [totalUsers, totalServiceRequests, pendingRequests, completedToday] =
+      await Promise.all([
+        this.userRepository.count(),
+        this.serviceRequestRepository.count(),
+        this.serviceRequestRepository.count({ where: { status: 'submitted' } }),
+        this.serviceRequestRepository.count({
+          where: {
+            status: 'completed',
+          },
+        }),
+      ]);
 
     const revenueToday = await this.paymentRepository
       .createQueryBuilder('payment')
@@ -299,7 +365,9 @@ export class ReportsService {
         .createQueryBuilder('sr')
         .select('sr.priority', 'priority')
         .addSelect('COUNT(sr.id)', 'count')
-        .where('sr.status IN (:...statuses)', { statuses: ['submitted', 'missing_documents'] })
+        .where('sr.status IN (:...statuses)', {
+          statuses: ['submitted', 'missing_documents'],
+        })
         .groupBy('sr.priority')
         .getRawMany(),
       this.serviceRequestRepository
@@ -307,14 +375,13 @@ export class ReportsService {
         .leftJoinAndSelect('sr.serviceType', 'st')
         .select('st.name', 'type')
         .addSelect('COUNT(sr.id)', 'count')
-        .where('sr.status IN (:...statuses)', { statuses: ['submitted', 'missing_documents'] })
+        .where('sr.status IN (:...statuses)', {
+          statuses: ['submitted', 'missing_documents'],
+        })
         .groupBy('st.name')
         .getRawMany(),
       this.serviceRequestRepository.count({
-        where: [
-          { status: 'submitted' },
-          { status: 'missing_documents' },
-        ],
+        where: [{ status: 'submitted' }, { status: 'missing_documents' }],
       }),
     ]);
 
@@ -340,8 +407,14 @@ export class ReportsService {
       .leftJoinAndSelect('sr.assignedOperator', 'operator')
       .select('operator.id', 'id')
       .addSelect('operator.fullName', 'name')
-      .addSelect('COUNT(CASE WHEN sr.status IN (:...statuses) THEN 1 END)', 'assignedRequests')
-      .addSelect('COUNT(CASE WHEN sr.status = :completed THEN 1 END)', 'completedToday')
+      .addSelect(
+        'COUNT(CASE WHEN sr.status IN (:...statuses) THEN 1 END)',
+        'assignedRequests',
+      )
+      .addSelect(
+        'COUNT(CASE WHEN sr.status = :completed THEN 1 END)',
+        'completedToday',
+      )
       .where('operator.id IS NOT NULL')
       .setParameters({
         statuses: ['submitted', 'in_review'],
@@ -351,8 +424,12 @@ export class ReportsService {
       .addGroupBy('operator.fullName')
       .getRawMany();
 
-    const totalWorkload = operators.reduce((sum, op) => sum + parseInt(op.assignedRequests || 0), 0);
-    const averageWorkload = operators.length > 0 ? totalWorkload / operators.length : 0;
+    const totalWorkload = operators.reduce(
+      (sum, op) => sum + parseInt(op.assignedRequests || 0),
+      0,
+    );
+    const averageWorkload =
+      operators.length > 0 ? totalWorkload / operators.length : 0;
 
     return {
       success: true,
@@ -362,7 +439,15 @@ export class ReportsService {
           name: op.name,
           assignedRequests: parseInt(op.assignedRequests || 0),
           completedToday: parseInt(op.completedToday || 0),
-          workloadPercentage: averageWorkload > 0 ? parseFloat(((parseInt(op.assignedRequests || 0) / totalWorkload) * 100).toFixed(2)) : 0,
+          workloadPercentage:
+            averageWorkload > 0
+              ? parseFloat(
+                  (
+                    (parseInt(op.assignedRequests || 0) / totalWorkload) *
+                    100
+                  ).toFixed(2),
+                )
+              : 0,
         })),
         averageWorkload: parseFloat(averageWorkload.toFixed(2)),
       },

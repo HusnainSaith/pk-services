@@ -6,6 +6,7 @@ import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
 import { GlobalValidationPipe } from './common/pipes/global-validation.pipe';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import * as compression from 'compression';
 
 async function bootstrap() {
   // Create app with rawBody enabled for Stripe webhooks
@@ -19,16 +20,19 @@ async function bootstrap() {
   const isProduction = configService.get('NODE_ENV') === 'production';
   const port = configService.get<number>('API_PORT', 3000);
 
-  // Compression middleware
-  // app.use(compression({
-  //   filter: (req, res) => {
-  //     if (req.headers['x-no-compression']) {
-  //       return false;
-  //     }
-  //     return compression.filter(req, res);
-  //   },
-  //   threshold: configService.get<number>('COMPRESSION_THRESHOLD', 1024),
-  // }));
+  // Compression middleware for faster response times
+  app.use(
+    compression({
+      filter: (req, res) => {
+        if (req.headers['x-no-compression']) {
+          return false;
+        }
+        return compression.filter(req, res);
+      },
+      threshold: 1024, // Only compress responses larger than 1KB
+      level: 6, // Balance between speed and compression ratio
+    }),
+  );
 
   // Security middleware
   app.use(
@@ -48,7 +52,10 @@ async function bootstrap() {
   // Rate limiting with environment-specific settings
   const rateLimitConfig = {
     windowMs: configService.get<number>('RATE_LIMIT_WINDOW', 60000),
-    limit: configService.get<number>('RATE_LIMIT_MAX', isProduction ? 100 : 300),
+    limit: configService.get<number>(
+      'RATE_LIMIT_MAX',
+      isProduction ? 100 : 300,
+    ),
     standardHeaders: true,
     legacyHeaders: false,
     message: {
@@ -56,11 +63,13 @@ async function bootstrap() {
       message: 'Rate limit exceeded. Please try again later.',
     },
   };
-  
+
   app.use(rateLimit(rateLimitConfig));
 
   // CORS configuration
-  const corsOrigins = configService.get<string>('CORS_ORIGINS', 'http://localhost:3001').split(',');
+  const corsOrigins = configService
+    .get<string>('CORS_ORIGINS', 'http://localhost:3001')
+    .split(',');
   app.enableCors({
     origin: corsOrigins,
     credentials: configService.get<boolean>('CORS_CREDENTIALS', true),
@@ -71,7 +80,7 @@ async function bootstrap() {
 
   // Global pipes and filters
   app.useGlobalPipes(new GlobalValidationPipe());
-  
+
   app.useGlobalFilters(new GlobalExceptionFilter());
 
   // API versioning
@@ -83,7 +92,9 @@ async function bootstrap() {
   if (!isProduction) {
     const config = new DocumentBuilder()
       .setTitle('PK SERVIZI API')
-      .setDescription('Complete service management system API with optimized performance')
+      .setDescription(
+        'Complete service management system API with optimized performance',
+      )
       .setVersion('1.0')
       .addBearerAuth(
         { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
@@ -125,14 +136,16 @@ async function bootstrap() {
 
   // Start server
   await app.listen(port, '0.0.0.0');
-  
+
   console.log(`🚀 PK SERVIZI API running on: http://localhost:${port}`);
-  console.log(`📊 Environment: ${configService.get('NODE_ENV', 'development')}`);
-  
+  console.log(
+    `📊 Environment: ${configService.get('NODE_ENV', 'development')}`,
+  );
+
   if (!isProduction) {
     console.log(`📚 API Documentation: http://localhost:${port}/api/docs`);
   }
-  
+
   console.log(`🔧 Health Check: http://localhost:${port}/health`);
   console.log(`⚡ Performance optimizations enabled`);
 }

@@ -95,7 +95,9 @@ export class AwsS3FolderService {
   ): Promise<void> {
     // Folders are created implicitly in S3 when files are uploaded
     // No need to create marker files
-    this.logger.debug(`Folder will be created implicitly: users/${userId}/${folderPath}`);
+    this.logger.debug(
+      `Folder will be created implicitly: users/${userId}/${folderPath}`,
+    );
   }
 
   /**

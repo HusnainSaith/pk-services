@@ -51,26 +51,38 @@ export class AuditService {
     const queryBuilder = this.auditRepository.createQueryBuilder('audit');
 
     if (filters.userId) {
-      queryBuilder.andWhere('audit.userId = :userId', { userId: filters.userId });
+      queryBuilder.andWhere('audit.userId = :userId', {
+        userId: filters.userId,
+      });
     }
 
     if (filters.action) {
-      queryBuilder.andWhere('audit.action = :action', { action: filters.action });
+      queryBuilder.andWhere('audit.action = :action', {
+        action: filters.action,
+      });
     }
 
     if (filters.resource) {
-      queryBuilder.andWhere('audit.resourceType = :resource', { resource: filters.resource });
+      queryBuilder.andWhere('audit.resourceType = :resource', {
+        resource: filters.resource,
+      });
     }
 
     if (filters.startDate) {
-      queryBuilder.andWhere('audit.createdAt >= :startDate', { startDate: filters.startDate });
+      queryBuilder.andWhere('audit.createdAt >= :startDate', {
+        startDate: filters.startDate,
+      });
     }
 
     if (filters.endDate) {
-      queryBuilder.andWhere('audit.createdAt <= :endDate', { endDate: filters.endDate });
+      queryBuilder.andWhere('audit.createdAt <= :endDate', {
+        endDate: filters.endDate,
+      });
     }
 
-    const [results, totalCount] = await queryBuilder.orderBy('audit.createdAt', 'DESC').getManyAndCount();
+    const [results, totalCount] = await queryBuilder
+      .orderBy('audit.createdAt', 'DESC')
+      .getManyAndCount();
 
     return {
       success: true,
@@ -91,11 +103,15 @@ export class AuditService {
     const queryBuilder = this.auditRepository.createQueryBuilder('audit');
 
     if (options.startDate) {
-      queryBuilder.andWhere('audit.createdAt >= :startDate', { startDate: options.startDate });
+      queryBuilder.andWhere('audit.createdAt >= :startDate', {
+        startDate: options.startDate,
+      });
     }
 
     if (options.endDate) {
-      queryBuilder.andWhere('audit.createdAt <= :endDate', { endDate: options.endDate });
+      queryBuilder.andWhere('audit.createdAt <= :endDate', {
+        endDate: options.endDate,
+      });
     }
 
     const logs = await queryBuilder.getMany();

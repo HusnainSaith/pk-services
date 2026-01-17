@@ -1,6 +1,11 @@
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
-import { Injectable, UnauthorizedException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../../users/users.service';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -26,18 +31,18 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(req: any, payload: any) {
     try {
       const token = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
-      
+
       // Check token expiration manually
       const currentTime = Math.floor(Date.now() / 1000);
       if (payload.exp && payload.exp < currentTime) {
         throw new UnauthorizedException('Token has expired');
       }
-      
+
       // Check if token is blacklisted
       const blacklisted = await this.blacklistedTokenRepository.findOne({
         where: { token },
       });
-      
+
       if (blacklisted) {
         throw new UnauthorizedException('Token has been invalidated');
       }

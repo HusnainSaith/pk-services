@@ -13,14 +13,16 @@ export class StripeService {
 
   constructor(private configService: ConfigService) {
     const apiKey = this.configService.get<string>('STRIPE_SECRET_KEY');
-    
+
     if (apiKey) {
       this.stripe = new Stripe(apiKey, {
         apiVersion: '2024-11-20.acacia' as any,
       });
       this.logger.log('Stripe service initialized successfully');
     } else {
-      this.logger.warn('STRIPE_SECRET_KEY not configured - Stripe features will be disabled');
+      this.logger.warn(
+        'STRIPE_SECRET_KEY not configured - Stripe features will be disabled',
+      );
       this.stripe = null;
     }
   }
@@ -45,17 +47,22 @@ export class StripeService {
     // Determine price ID
     let priceId = params.priceId;
     if (!priceId && params.billingCycle) {
-      priceId = params.billingCycle === 'monthly' 
-        ? this.configService.get<string>('STRIPE_PRICE_ID_MONTHLY')
-        : this.configService.get<string>('STRIPE_PRICE_ID_ANNUAL');
+      priceId =
+        params.billingCycle === 'monthly'
+          ? this.configService.get<string>('STRIPE_PRICE_ID_MONTHLY')
+          : this.configService.get<string>('STRIPE_PRICE_ID_ANNUAL');
     }
 
     if (!priceId) {
-      throw new BadRequestException('Price ID or billing cycle must be provided');
+      throw new BadRequestException(
+        'Price ID or billing cycle must be provided',
+      );
     }
 
     const frontendUrl = this.configService.get('FRONTEND_URL');
-    const successUrl = params.successUrl || `${frontendUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}`;
+    const successUrl =
+      params.successUrl ||
+      `${frontendUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = params.cancelUrl || `${frontendUrl}/payment/cancel`;
 
     this.logger.debug(`Creating checkout session for user ${params.userId}`);
@@ -88,7 +95,9 @@ export class StripeService {
         },
       });
 
-      this.logger.log(`Checkout session ${session.id} created for user ${params.userId}`);
+      this.logger.log(
+        `Checkout session ${session.id} created for user ${params.userId}`,
+      );
       return session;
     } catch (error) {
       this.logger.error(`Failed to create checkout session: ${error.message}`);
@@ -121,7 +130,10 @@ export class StripeService {
   /**
    * Create subscription
    */
-  async createSubscription(customerId: string, priceId: string): Promise<Stripe.Subscription> {
+  async createSubscription(
+    customerId: string,
+    priceId: string,
+  ): Promise<Stripe.Subscription> {
     if (!this.stripe) {
       throw new Error('Stripe not configured');
     }
@@ -150,7 +162,9 @@ export class StripeService {
     try {
       return await this.stripe.subscriptions.retrieve(subscriptionId);
     } catch (error) {
-      this.logger.error(`Failed to retrieve subscription ${subscriptionId}: ${error.message}`);
+      this.logger.error(
+        `Failed to retrieve subscription ${subscriptionId}: ${error.message}`,
+      );
       throw new BadRequestException('Subscription not found');
     }
   }
@@ -158,7 +172,9 @@ export class StripeService {
   /**
    * Retrieve subscription (alias for getSubscription)
    */
-  async retrieveSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
+  async retrieveSubscription(
+    subscriptionId: string,
+  ): Promise<Stripe.Subscription> {
     return this.getSubscription(subscriptionId);
   }
 
@@ -182,7 +198,9 @@ export class StripeService {
         return await this.stripe.subscriptions.cancel(subscriptionId);
       }
     } catch (error) {
-      this.logger.error(`Failed to cancel subscription ${subscriptionId}: ${error.message}`);
+      this.logger.error(
+        `Failed to cancel subscription ${subscriptionId}: ${error.message}`,
+      );
       throw new BadRequestException('Failed to cancel subscription');
     }
   }
@@ -199,18 +217,23 @@ export class StripeService {
     }
 
     try {
-      const subscription = await this.stripe.subscriptions.retrieve(subscriptionId);
+      const subscription =
+        await this.stripe.subscriptions.retrieve(subscriptionId);
       const itemId = subscription.items.data[0].id;
 
       return await this.stripe.subscriptions.update(subscriptionId, {
-        items: [{
-          id: itemId,
-          price: newPriceId,
-        }],
+        items: [
+          {
+            id: itemId,
+            price: newPriceId,
+          },
+        ],
         proration_behavior: 'always_invoice',
       });
     } catch (error) {
-      this.logger.error(`Failed to update subscription ${subscriptionId}: ${error.message}`);
+      this.logger.error(
+        `Failed to update subscription ${subscriptionId}: ${error.message}`,
+      );
       throw new BadRequestException('Failed to upgrade subscription');
     }
   }
@@ -218,7 +241,9 @@ export class StripeService {
   /**
    * List customer subscriptions
    */
-  async getCustomerSubscriptions(customerId: string): Promise<Stripe.Subscription[]> {
+  async getCustomerSubscriptions(
+    customerId: string,
+  ): Promise<Stripe.Subscription[]> {
     if (!this.stripe) {
       throw new Error('Stripe not configured');
     }
@@ -262,7 +287,9 @@ export class StripeService {
   /**
    * Get payment intent
    */
-  async getPaymentIntent(paymentIntentId: string): Promise<Stripe.PaymentIntent> {
+  async getPaymentIntent(
+    paymentIntentId: string,
+  ): Promise<Stripe.PaymentIntent> {
     if (!this.stripe) {
       throw new Error('Stripe not configured');
     }
@@ -278,7 +305,10 @@ export class StripeService {
   /**
    * Create refund
    */
-  async createRefund(paymentIntentId: string, amount?: number): Promise<Stripe.Refund> {
+  async createRefund(
+    paymentIntentId: string,
+    amount?: number,
+  ): Promise<Stripe.Refund> {
     if (!this.stripe) {
       throw new Error('Stripe not configured');
     }
@@ -297,20 +327,31 @@ export class StripeService {
   /**
    * Construct webhook event from payload
    */
-  async constructWebhookEvent(payload: Buffer | string, signature: string): Promise<Stripe.Event> {
+  async constructWebhookEvent(
+    payload: Buffer | string,
+    signature: string,
+  ): Promise<Stripe.Event> {
     if (!this.stripe) {
       throw new Error('Stripe not configured');
     }
 
-    const webhookSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
+    const webhookSecret = this.configService.get<string>(
+      'STRIPE_WEBHOOK_SECRET',
+    );
     if (!webhookSecret) {
       throw new Error('STRIPE_WEBHOOK_SECRET not configured');
     }
 
     try {
-      return this.stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+      return this.stripe.webhooks.constructEvent(
+        payload,
+        signature,
+        webhookSecret,
+      );
     } catch (error) {
-      this.logger.error(`Webhook signature verification failed: ${error.message}`);
+      this.logger.error(
+        `Webhook signature verification failed: ${error.message}`,
+      );
       throw new BadRequestException('Invalid webhook signature');
     }
   }
@@ -318,7 +359,10 @@ export class StripeService {
   /**
    * Verify webhook signature (alias for constructWebhookEvent)
    */
-  verifyWebhookSignature(body: string | Buffer, signature: string): Stripe.Event {
+  verifyWebhookSignature(
+    body: string | Buffer,
+    signature: string,
+  ): Stripe.Event {
     return this.constructWebhookEvent(body, signature) as any;
   }
 }

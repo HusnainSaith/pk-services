@@ -41,10 +41,22 @@ export class IseeRequest {
   propertyType: string;
 
   // Redditi (Income - 2 anni precedenti)
-  @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true, name: 'income_year_1' })
+  @Column({
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    nullable: true,
+    name: 'income_year_1',
+  })
   incomeYear1: number;
 
-  @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true, name: 'income_year_2' })
+  @Column({
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    nullable: true,
+    name: 'income_year_2',
+  })
   incomeYear2: number;
 
   @Column({ type: 'jsonb', nullable: true, name: 'income_sources' })
@@ -55,10 +67,22 @@ export class IseeRequest {
   }>;
 
   // Patrimonio Mobiliare (Movable Assets)
-  @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true, name: 'bank_accounts' })
+  @Column({
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    nullable: true,
+    name: 'bank_accounts',
+  })
   bankAccounts: number;
 
-  @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true, name: 'investments' })
+  @Column({
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    nullable: true,
+    name: 'investments',
+  })
   investments: number;
 
   @Column({ type: 'jsonb', nullable: true, name: 'other_movable_assets' })

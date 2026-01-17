@@ -9,7 +9,15 @@ import { Payment } from '../payments/entities/payment.entity';
 import { UserSubscription } from '../subscriptions/entities/user-subscription.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, ServiceRequest, Appointment, Payment, UserSubscription])],
+  imports: [
+    TypeOrmModule.forFeature([
+      User,
+      ServiceRequest,
+      Appointment,
+      Payment,
+      UserSubscription,
+    ]),
+  ],
   controllers: [ReportsController],
   providers: [ReportsService],
 })

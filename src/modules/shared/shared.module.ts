@@ -16,14 +16,7 @@ import { PerformanceService } from '../../common/services/performance.service';
       }),
     }),
   ],
-  providers: [
-    CacheService,
-    PerformanceService,
-  ],
-  exports: [
-    JwtModule,
-    CacheService,
-    PerformanceService,
-  ],
+  providers: [CacheService, PerformanceService],
+  exports: [JwtModule, CacheService, PerformanceService],
 })
 export class SharedModule {}

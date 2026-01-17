@@ -65,7 +65,13 @@ export class Modello730Request {
   }>;
 
   // Spese Sanitarie (Medical Expenses)
-  @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true, name: 'medical_expenses' })
+  @Column({
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    nullable: true,
+    name: 'medical_expenses',
+  })
   medicalExpenses: number;
 
   @Column({ type: 'jsonb', nullable: true, name: 'medical_details' })
@@ -75,7 +81,13 @@ export class Modello730Request {
   }>;
 
   // Spese Istruzione (Education Expenses)
-  @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true, name: 'education_expenses' })
+  @Column({
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    nullable: true,
+    name: 'education_expenses',
+  })
   educationExpenses: number;
 
   @Column({ type: 'jsonb', nullable: true, name: 'education_details' })

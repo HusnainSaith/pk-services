@@ -1,8 +1,9 @@
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BaseService } from '../../common/services/base.service';
 import { Role } from './entities/role.entity';
+import { User } from '../users/entities/user.entity';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 
@@ -11,10 +12,16 @@ import { UpdateRoleDto } from './dto/update-role.dto';
  * Manages role CRUD operations and permissions assignment
  * Extends BaseService to reduce redundant find/create/update/delete logic
  */
-export class RolesService extends BaseService<Role, CreateRoleDto, UpdateRoleDto> {
+export class RolesService extends BaseService<
+  Role,
+  CreateRoleDto,
+  UpdateRoleDto
+> {
   constructor(
     @InjectRepository(Role)
     protected readonly roleRepository: Repository<Role>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {
     super(roleRepository);
   }
@@ -112,11 +119,26 @@ export class RolesService extends BaseService<Role, CreateRoleDto, UpdateRoleDto
   /**
    * Assign role to user
    */
-  async assignRoleToUser(id: string, dto: any) {
-    // Verify role exists
-    await this.findById(id);
-    // TODO: Implement user role assignment
-    return null;
+  async assignRoleToUser(userId: string, dto: any) {
+    // Check if user exists
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    // Check if role exists
+    const role = await this.roleRepository.findOne({ where: { id: dto.roleId } });
+    if (!role) {
+      throw new NotFoundException(`Role with ID ${dto.roleId} not found`);
+    }
+
+    // Assign role
+    user.role = role;
+    const savedUser = await this.userRepository.save(user);
+    
+    // Return user without password
+    const { password, ...result } = savedUser;
+    return result;
   }
 
   /**

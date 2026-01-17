@@ -32,8 +32,10 @@ export class InvoicesController {
    * Get user's invoices with pagination
    */
   @Get()
+  @UseGuards(PermissionsGuard)
+  @Permissions('invoices:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get user invoices' })
+  @ApiOperation({ summary: '[Customer] Get user invoices' })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
   async getUserInvoices(
@@ -65,8 +67,10 @@ export class InvoicesController {
    * Get specific invoice details
    */
   @Get(':id')
+  @UseGuards(PermissionsGuard)
+  @Permissions('invoices:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get invoice details' })
+  @ApiOperation({ summary: '[Customer] Get invoice details' })
   @ApiParam({ name: 'id', type: 'string' })
   async getInvoice(@Param('id') invoiceId: string, @CurrentUser() user: any) {
     const invoice = await this.invoiceService.findOne(invoiceId);
@@ -86,8 +90,10 @@ export class InvoicesController {
    * Download invoice as PDF
    */
   @Get(':id/download')
+  @UseGuards(PermissionsGuard)
+  @Permissions('invoices:download')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Download invoice as PDF' })
+  @ApiOperation({ summary: '[Customer] Download invoice as PDF' })
   @ApiParam({ name: 'id', type: 'string' })
   async downloadInvoice(
     @Param('id') invoiceId: string,
@@ -122,7 +128,7 @@ export class InvoicesController {
   @UseGuards(PermissionsGuard)
   @Permissions('invoices:resend')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Re-send invoice email' })
+  @ApiOperation({ summary: '[Customer] Re-send invoice email' })
   @ApiParam({ name: 'id', type: 'string' })
   async resendInvoice(
     @Param('id') invoiceId: string,
@@ -150,7 +156,7 @@ export class InvoicesController {
   @UseGuards(PermissionsGuard)
   @Permissions('invoices:view_all')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Admin: Get all invoices' })
+  @ApiOperation({ summary: '[Admin] Get all invoices' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   async getAllInvoices() {

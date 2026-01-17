@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Get,
-  Param,
-  UseGuards,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, Param, UseGuards, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuditService } from './audit.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -20,7 +14,7 @@ export class AuditController {
   @Get()
   @Permissions('audit_logs:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'List audit logs' })
+  @ApiOperation({ summary: '[Admin] List audit logs' })
   findAll() {
     return this.auditService.findAll();
   }
@@ -28,7 +22,7 @@ export class AuditController {
   @Get('user/:userId')
   @Permissions('audit_logs:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get user audit logs' })
+  @ApiOperation({ summary: '[Admin] Get user audit logs' })
   findByUser(@Param('userId') userId: string) {
     return this.auditService.findByUser(userId);
   }
@@ -36,7 +30,7 @@ export class AuditController {
   @Get('resource/:type/:id')
   @Permissions('audit_logs:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get resource audit logs' })
+  @ApiOperation({ summary: '[Admin] Get resource audit logs' })
   findByResource(@Param('type') type: string, @Param('id') id: string) {
     return this.auditService.findByResource(type, id);
   }
@@ -45,7 +39,7 @@ export class AuditController {
   @Get('search')
   @Permissions('audit_logs:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Advanced search with multiple filters' })
+  @ApiOperation({ summary: '[Admin] Advanced search with multiple filters' })
   searchAuditLogs(
     @Query('userId') userId?: string,
     @Query('action') action?: string,
@@ -65,7 +59,7 @@ export class AuditController {
   @Get('export')
   @Permissions('audit_logs:export')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Export audit logs (CSV)' })
+  @ApiOperation({ summary: '[Admin] Export audit logs (CSV)' })
   exportAuditLogs(
     @Query('format') format: string = 'csv',
     @Query('startDate') startDate?: string,

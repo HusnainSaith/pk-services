@@ -12,7 +12,8 @@ export const VALIDATION = {
     MIN_LENGTH: 8,
     MAX_LENGTH: 128,
     PATTERN: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-    MESSAGE: 'Password must contain at least one uppercase, lowercase, and number',
+    MESSAGE:
+      'Password must contain at least one uppercase, lowercase, and number',
   },
   EMAIL: {
     MAX_LENGTH: 255,
@@ -184,7 +185,7 @@ export const DATABASE = {
 // ============================================================================
 
 export const JWT = {
-  ACCESS_TOKEN_EXPIRY: '15m',
+  ACCESS_TOKEN_EXPIRY: '7h',
   REFRESH_TOKEN_EXPIRY: '7d',
   ALGORITHM: 'HS256',
 } as const;
@@ -204,11 +205,14 @@ export const BUSINESS_RULES = {
 // TYPE UNIONS FOR TYPESAFETY
 // ============================================================================
 
-export type RequestStatus = typeof REQUEST_STATUS[keyof typeof REQUEST_STATUS];
+export type RequestStatus =
+  (typeof REQUEST_STATUS)[keyof typeof REQUEST_STATUS];
 export type SubscriptionStatus =
-  typeof SUBSCRIPTION_STATUS[keyof typeof SUBSCRIPTION_STATUS];
-export type PaymentStatus = typeof PAYMENT_STATUS[keyof typeof PAYMENT_STATUS];
+  (typeof SUBSCRIPTION_STATUS)[keyof typeof SUBSCRIPTION_STATUS];
+export type PaymentStatus =
+  (typeof PAYMENT_STATUS)[keyof typeof PAYMENT_STATUS];
 export type AppointmentStatus =
-  typeof APPOINTMENT_STATUS[keyof typeof APPOINTMENT_STATUS];
-export type DocumentStatus = typeof DOCUMENT_STATUS[keyof typeof DOCUMENT_STATUS];
-export type BillingCycle = typeof BILLING_CYCLE[keyof typeof BILLING_CYCLE];
+  (typeof APPOINTMENT_STATUS)[keyof typeof APPOINTMENT_STATUS];
+export type DocumentStatus =
+  (typeof DOCUMENT_STATUS)[keyof typeof DOCUMENT_STATUS];
+export type BillingCycle = (typeof BILLING_CYCLE)[keyof typeof BILLING_CYCLE];

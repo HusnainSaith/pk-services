@@ -3,6 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { OverrideLimitsDto } from './dto/override-limits.dto';
+import { CreateCheckoutDto } from './dto/create-checkout.dto';
+import { UpgradeSubscriptionDto } from './dto/upgrade-subscription.dto';
+import { CreateSubscriptionPlanDto } from './dto/create-subscription-plan.dto';
+import { UpdateSubscriptionPlanDto } from './dto/update-subscription-plan.dto';
+import { UpdateSubscriptionStatusDto } from './dto/update-subscription-status.dto';
 import { SubscriptionPlan } from './entities/subscription-plan.entity';
 import { UserSubscription } from './entities/user-subscription.entity';
 import { Payment } from '../payments/entities/payment.entity';
@@ -39,10 +44,15 @@ export class SubscriptionsService {
     return { success: true, data: subscription };
   }
 
-  async createCheckout(dto: any, userId: string): Promise<any> {
+  async createCheckout(
+    dto: CreateCheckoutDto,
+    userId: string,
+  ): Promise<{ sessionId: string; url: string }> {
     try {
       // Get the subscription plan
-      const plan = await this.planRepository.findOne({ where: { id: dto.planId } });
+      const plan = await this.planRepository.findOne({
+        where: { id: dto.planId },
+      });
       if (!plan) {
         throw new BadRequestException('Subscription plan not found');
       }
@@ -53,19 +63,24 @@ export class SubscriptionsService {
         throw new BadRequestException('User not found');
       }
 
-      this.logger.log(`Creating checkout for user ${userId} (${user.email}) - Plan: ${plan.name}`);
+      this.logger.log(
+        `Creating checkout for user ${userId} (${user.email}) - Plan: ${plan.name}`,
+      );
 
-      // Determine billing cycle and price
-      const billingCycle = dto.billingCycle || 'monthly';
-      const price = billingCycle === 'annual' ? plan.priceAnnual : plan.priceMonthly;
+      // Use monthly billing by default
+      const price = plan.priceMonthly;
 
       // Map plan to Stripe Price ID (you can configure these in environment or database)
-      // For now, using a simple mapping based on plan name and billing cycle
-      const stripePriceId = this.getStripePriceId(plan, billingCycle);
+      // For now, using a simple mapping based on plan name
+      const stripePriceId = this.getStripePriceId(plan, 'monthly');
 
       if (!stripePriceId) {
-        this.logger.warn(`No Stripe Price ID configured for plan ${plan.name} (${billingCycle})`);
-        throw new BadRequestException('This subscription plan is not available for purchase at the moment');
+        this.logger.warn(
+          `No Stripe Price ID configured for plan ${plan.name} (monthly)`,
+        );
+        throw new BadRequestException(
+          'This subscription plan is not available for purchase at the moment',
+        );
       }
 
       // Create user subscription with pending status
@@ -73,23 +88,27 @@ export class SubscriptionsService {
         userId,
         planId: dto.planId,
         status: 'pending',
-        billingCycle,
+        billingCycle: 'monthly',
         startDate: new Date(),
         autoRenew: true,
       });
-      const savedSubscription = await this.userSubscriptionRepository.save(subscription);
-      
-      this.logger.log(`Subscription created with status: ${savedSubscription.status}`);
+      const savedSubscription =
+        await this.userSubscriptionRepository.save(subscription);
+
+      this.logger.log(
+        `Subscription created with status: ${savedSubscription.status}`,
+      );
       this.logger.log(`Subscription ID: ${savedSubscription.id}`);
 
       // Create Stripe checkout session
-      const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
+      const frontendUrl =
+        this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
       const session = await this.stripeService.createCheckoutSession({
         priceId: stripePriceId,
         userId: user.id,
         userEmail: user.email,
         planId: plan.id,
-        billingCycle,
+        billingCycle: 'monthly',
         successUrl: `${frontendUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
         cancelUrl: `${frontendUrl}/payment/cancel`,
         metadata: {
@@ -107,20 +126,14 @@ export class SubscriptionsService {
       });
 
       return {
-        success: true,
-        message: 'Checkout session created successfully',
-        data: {
-          subscriptionId: savedSubscription.id,
-          checkoutUrl: session.url,
-          sessionId: session.id,
-          planName: plan.name,
-          price,
-          currency: 'eur',
-          billingCycle,
-        },
+        sessionId: session.id,
+        url: session.url || '',
       };
     } catch (error) {
-      this.logger.error(`Failed to create checkout: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to create checkout: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -129,19 +142,22 @@ export class SubscriptionsService {
    * Map subscription plan to Stripe Price ID
    * TODO: Store these in database or environment variables
    */
-  private getStripePriceId(plan: SubscriptionPlan, billingCycle: string): string | null {
+  private getStripePriceId(
+    plan: SubscriptionPlan,
+    billingCycle: string,
+  ): string | null {
     // You need to create these Price IDs in your Stripe Dashboard
     // and configure them here or in the database
     const priceMapping = {
-      'Basic': {
+      Basic: {
         monthly: this.configService.get('STRIPE_PRICE_BASIC_MONTHLY'),
         annual: this.configService.get('STRIPE_PRICE_BASIC_ANNUAL'),
       },
-      'Professional': {
+      Professional: {
         monthly: this.configService.get('STRIPE_PRICE_PROFESSIONAL_MONTHLY'),
         annual: this.configService.get('STRIPE_PRICE_PROFESSIONAL_ANNUAL'),
       },
-      'Premium': {
+      Premium: {
         monthly: this.configService.get('STRIPE_PRICE_PREMIUM_MONTHLY'),
         annual: this.configService.get('STRIPE_PRICE_PREMIUM_ANNUAL'),
       },
@@ -155,17 +171,31 @@ export class SubscriptionsService {
   }
 
   async cancelSubscription(userId: string): Promise<any> {
-    const subscription = await this.userSubscriptionRepository.findOne({ where: { userId } });
+    const subscription = await this.userSubscriptionRepository.findOne({
+      where: { userId },
+    });
     if (subscription) {
-      await this.userSubscriptionRepository.update(userId, { status: 'cancelled', endDate: new Date() });
+      await this.userSubscriptionRepository.update(userId, {
+        status: 'cancelled',
+        endDate: new Date(),
+      });
     }
     return { success: true, message: 'Subscription cancelled' };
   }
 
-  async upgradeSubscription(dto: any, userId: string): Promise<any> {
-    await this.userSubscriptionRepository.update({ userId }, { planId: dto.planId });
-    const updated = await this.userSubscriptionRepository.findOne({ where: { userId }, relations: ['plan'] });
-    return { success: true, message: 'Plan upgraded', data: updated };
+  async upgradeSubscription(
+    dto: UpgradeSubscriptionDto,
+    userId: string,
+  ): Promise<UserSubscription> {
+    await this.userSubscriptionRepository.update(
+      { userId },
+      { planId: dto.newPlanId },
+    );
+    const updated = await this.userSubscriptionRepository.findOne({
+      where: { userId },
+      relations: ['plan'],
+    });
+    return updated!;
   }
 
   async getMyPayments(userId: string): Promise<any> {
@@ -174,7 +204,9 @@ export class SubscriptionsService {
   }
 
   async downloadReceipt(id: string, userId: string): Promise<any> {
-    const payment = await this.paymentRepository.findOne({ where: { id, userId } });
+    const payment = await this.paymentRepository.findOne({
+      where: { id, userId },
+    });
     return { success: true, message: 'Receipt downloaded', data: payment };
   }
 
@@ -183,16 +215,19 @@ export class SubscriptionsService {
     return { success: true, data: plans };
   }
 
-  async createPlan(dto: any): Promise<any> {
+  async createPlan(dto: CreateSubscriptionPlanDto): Promise<SubscriptionPlan> {
     const plan = this.planRepository.create(dto);
     const saved = await this.planRepository.save(plan);
-    return { success: true, message: 'Plan created', data: saved };
+    return saved;
   }
 
-  async updatePlan(id: string, dto: any): Promise<any> {
+  async updatePlan(
+    id: string,
+    dto: UpdateSubscriptionPlanDto,
+  ): Promise<SubscriptionPlan> {
     await this.planRepository.update(id, dto);
     const updated = await this.planRepository.findOne({ where: { id } });
-    return { success: true, message: 'Plan updated', data: updated };
+    return updated;
   }
 
   async deletePlan(id: string): Promise<any> {
@@ -201,25 +236,37 @@ export class SubscriptionsService {
   }
 
   async getAllSubscriptions(): Promise<any> {
-    const subscriptions = await this.userSubscriptionRepository.find({ relations: ['plan', 'user'] });
+    const subscriptions = await this.userSubscriptionRepository.find({
+      relations: ['plan', 'user'],
+    });
     return { success: true, data: subscriptions };
   }
 
   async getSubscription(id: string): Promise<any> {
-    const subscription = await this.userSubscriptionRepository.findOne({ where: { id }, relations: ['plan', 'user'] });
+    const subscription = await this.userSubscriptionRepository.findOne({
+      where: { id },
+      relations: ['plan', 'user'],
+    });
     return { success: true, data: subscription };
   }
 
-  async updateSubscriptionStatus(id: string, dto: any): Promise<any> {
+  async updateSubscriptionStatus(
+    id: string,
+    dto: UpdateSubscriptionStatusDto,
+  ): Promise<UserSubscription> {
     await this.userSubscriptionRepository.update(id, { status: dto.status });
-    const updated = await this.userSubscriptionRepository.findOne({ where: { id } });
-    return { success: true, message: 'Subscription status updated', data: updated };
+    const updated = await this.userSubscriptionRepository.findOne({
+      where: { id },
+    });
+    return updated!;
   }
 
-  async processRefund(id: string, dto: any): Promise<any> {
-    await this.paymentRepository.update(id, { status: 'refunded', metadata: { refundReason: dto.reason } });
-    const updated = await this.paymentRepository.findOne({ where: { id } });
-    return { success: true, message: 'Refund processed', data: updated };
+  async processRefund(
+    id: string,
+    dto: { reason?: string },
+  ): Promise<{ success: boolean; message: string }> {
+    await this.paymentRepository.update(id, { status: 'refunded' });
+    return { success: true, message: 'Refund processed' };
   }
 
   async getAllPayments(): Promise<any> {
@@ -229,9 +276,15 @@ export class SubscriptionsService {
 
   // Extended Operations - Usage Tracking
   async getMyUsage(userId: string): Promise<any> {
-    const subscription = await this.userSubscriptionRepository.findOne({ where: { userId }, relations: ['plan'] });
+    const subscription = await this.userSubscriptionRepository.findOne({
+      where: { userId },
+      relations: ['plan'],
+    });
     if (!subscription) {
-      return { success: true, data: { userId, currentPeriod: {}, resetDate: null } };
+      return {
+        success: true,
+        data: { userId, currentPeriod: {}, resetDate: null },
+      };
     }
 
     return {
@@ -243,13 +296,18 @@ export class SubscriptionsService {
           documentUploads: { used: 15, limit: 50 },
           appointments: { used: 2, limit: 5 },
         },
-        resetDate: subscription.endDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        resetDate:
+          subscription.endDate ||
+          new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       },
     };
   }
 
   async getMyLimits(userId: string): Promise<any> {
-    const subscription = await this.userSubscriptionRepository.findOne({ where: { userId }, relations: ['plan'] });
+    const subscription = await this.userSubscriptionRepository.findOne({
+      where: { userId },
+      relations: ['plan'],
+    });
     if (!subscription) {
       return { success: true, data: { userId, limits: {}, features: [] } };
     }
@@ -271,7 +329,9 @@ export class SubscriptionsService {
   }
 
   async generateInvoice(id: string, userId: string): Promise<any> {
-    const payment = await this.paymentRepository.findOne({ where: { id, userId } });
+    const payment = await this.paymentRepository.findOne({
+      where: { id, userId },
+    });
     if (!payment) {
       return { success: false, message: 'Payment not found' };
     }
@@ -290,7 +350,10 @@ export class SubscriptionsService {
   }
 
   async resendReceipt(id: string, userId: string): Promise<any> {
-    const payment = await this.paymentRepository.findOne({ where: { id, userId }, relations: ['user'] });
+    const payment = await this.paymentRepository.findOne({
+      where: { id, userId },
+      relations: ['user'],
+    });
     if (!payment) {
       return { success: false, message: 'Payment not found' };
     }
@@ -307,12 +370,16 @@ export class SubscriptionsService {
   }
 
   async overrideLimits(id: string, dto: OverrideLimitsDto): Promise<any> {
-    const subscription = await this.userSubscriptionRepository.findOne({ where: { id } });
+    const subscription = await this.userSubscriptionRepository.findOne({
+      where: { id },
+    });
     if (!subscription) {
       return { success: false, message: 'Subscription not found' };
     }
 
-    const expiresAt = new Date(Date.now() + (dto.durationDays || 30) * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(
+      Date.now() + (dto.durationDays || 30) * 24 * 60 * 60 * 1000,
+    );
 
     return {
       success: true,
@@ -330,5 +397,44 @@ export class SubscriptionsService {
         expiresAt,
       },
     };
+  }
+
+  /**
+   * Reactivate a cancelled subscription
+   */
+  async reactivateSubscription(userId: string): Promise<any> {
+    try {
+      const subscription = await this.userSubscriptionRepository.findOne({
+        where: { userId, status: 'cancelled' },
+        relations: ['plan'],
+      });
+
+      if (!subscription) {
+        return {
+          success: false,
+          message: 'No cancelled subscription found to reactivate',
+        };
+      }
+
+      subscription.status = 'active';
+      subscription.endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // Extend 30 days
+      subscription.autoRenew = true;
+
+      const updated = await this.userSubscriptionRepository.save(subscription);
+
+      this.logger.log(`Reactivated subscription for user ${userId}`);
+
+      return {
+        success: true,
+        message: 'Subscription reactivated successfully',
+        data: updated,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to reactivate subscription: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
   }
 }

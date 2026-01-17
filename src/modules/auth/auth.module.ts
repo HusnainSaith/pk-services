@@ -23,7 +23,7 @@ import { BlacklistedToken } from './entities/blacklisted-token.entity';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.get('JWT_SECRET'),
-        signOptions: { expiresIn: '15m' },
+        signOptions: { expiresIn: '7h' },
       }),
     }),
     ConfigModule,

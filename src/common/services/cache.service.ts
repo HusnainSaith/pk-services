@@ -16,7 +16,7 @@ export class CacheService {
   constructor(private readonly configService: ConfigService) {
     this.defaultTTL = this.configService.get<number>('CACHE_TTL', 300000); // 5 minutes
     this.maxSize = this.configService.get<number>('CACHE_MAX_SIZE', 1000);
-    
+
     // Cleanup expired entries every 5 minutes
     setInterval(() => this.cleanup(), 300000);
   }
@@ -26,16 +26,16 @@ export class CacheService {
    */
   get<T>(key: string): T | null {
     const item = this.cache.get(key);
-    
+
     if (!item) {
       return null;
     }
-    
+
     if (Date.now() > item.expiry) {
       this.cache.delete(key);
       return null;
     }
-    
+
     return item.data;
   }
 
@@ -47,7 +47,7 @@ export class CacheService {
     if (this.cache.size >= this.maxSize) {
       this.evictOldest();
     }
-    
+
     const expiry = Date.now() + (ttl || this.defaultTTL);
     this.cache.set(key, { data: value, expiry });
   }
@@ -86,11 +86,11 @@ export class CacheService {
     ttl?: number,
   ): Promise<T> {
     const cached = this.get<T>(key);
-    
+
     if (cached !== null) {
       return cached;
     }
-    
+
     const value = await factory();
     this.set(key, value, ttl);
     return value;
@@ -102,14 +102,14 @@ export class CacheService {
   private cleanup(): void {
     const now = Date.now();
     let cleaned = 0;
-    
+
     for (const [key, item] of this.cache.entries()) {
       if (now > item.expiry) {
         this.cache.delete(key);
         cleaned++;
       }
     }
-    
+
     if (cleaned > 0) {
       this.logger.debug(`Cleaned ${cleaned} expired cache entries`);
     }

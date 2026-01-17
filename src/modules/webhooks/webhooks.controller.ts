@@ -21,7 +21,7 @@ export class WebhooksController {
   constructor(private readonly webhooksService: WebhooksService) {}
 
   @Post('stripe')
-  @ApiOperation({ summary: 'Stripe webhook handler' })
+  @ApiOperation({ summary: '[Public] Stripe webhook handler' })
   handleStripeWebhook(
     @Req() req: RawBodyRequest<Request>,
     @Headers('stripe-signature') signature: string,
@@ -34,8 +34,8 @@ export class WebhooksController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('webhooks:test')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Test webhook (dev environment)' })
-  testStripeWebhook(@Body() testPayload: any) {
+  @ApiOperation({ summary: '[Admin] Test webhook (dev environment)' })
+  testStripeWebhook(@Body() testPayload: Record<string, unknown>) {
     return this.webhooksService.testStripeWebhook(testPayload);
   }
 
@@ -43,7 +43,7 @@ export class WebhooksController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('webhooks:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'View webhook processing logs' })
+  @ApiOperation({ summary: '[Admin] View webhook processing logs' })
   getWebhookLogs() {
     return this.webhooksService.getWebhookLogs();
   }

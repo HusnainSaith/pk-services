@@ -19,10 +19,22 @@ export class SubscriptionPlan {
   @Column({ type: 'text', nullable: true })
   description: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, name: 'price_monthly' })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    name: 'price_monthly',
+  })
   priceMonthly: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, name: 'price_annual' })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    name: 'price_annual',
+  })
   priceAnnual: number;
 
   @Column({ type: 'jsonb', nullable: true })

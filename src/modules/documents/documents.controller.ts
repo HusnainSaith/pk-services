@@ -36,7 +36,9 @@ export class DocumentsController {
   @Get('service-type/:serviceTypeId/required')
   @Permissions('documents:read_own')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get required documents for service type' })
+  @ApiOperation({
+    summary: '[Customer] Get required documents for service type',
+  })
   getRequiredDocuments(@Param('serviceTypeId') serviceTypeId: string) {
     return this.documentsService.getRequiredDocuments(serviceTypeId);
   }
@@ -44,7 +46,7 @@ export class DocumentsController {
   @Post('upload-multiple')
   @Permissions('documents:write_own')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Upload multiple documents by type' })
+  @ApiOperation({ summary: '[Customer] Upload multiple documents by type' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
     FileFieldsInterceptor([
@@ -87,7 +89,7 @@ export class DocumentsController {
   @Get('request/:requestId')
   @Permissions('documents:read_own')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'List request documents' })
+  @ApiOperation({ summary: '[Customer] List request documents' })
   findByRequest(
     @Param('requestId') requestId: string,
     @CurrentUser() user: any,
@@ -98,7 +100,7 @@ export class DocumentsController {
   @Get(':id')
   @Permissions('documents:read_own')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get document details' })
+  @ApiOperation({ summary: '[Customer] Get document details' })
   findOne(@Param('id') id: string, @CurrentUser() user: any) {
     return this.documentsService.findOne(id);
   }
@@ -106,7 +108,7 @@ export class DocumentsController {
   @Get(':id/download')
   @Permissions('documents:read_own')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Download document' })
+  @ApiOperation({ summary: '[Customer] Download document' })
   download(@Param('id') id: string, @CurrentUser() user: any) {
     return this.documentsService.download(id, user.id);
   }
@@ -114,7 +116,7 @@ export class DocumentsController {
   @Patch(':id')
   @Permissions('documents:write_own')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Replace document' })
+  @ApiOperation({ summary: '[Customer] Replace document' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
     FileFieldsInterceptor([
@@ -143,7 +145,7 @@ export class DocumentsController {
   @Delete(':id')
   @Permissions('documents:delete_own')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Delete document' })
+  @ApiOperation({ summary: '[Customer] Delete document' })
   remove(@Param('id') id: string, @CurrentUser() user: any) {
     return this.documentsService.remove(id);
   }
@@ -152,7 +154,7 @@ export class DocumentsController {
   @Get('request/:requestId/all')
   @Permissions('documents:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'List all request documents' })
+  @ApiOperation({ summary: '[Admin] List all request documents' })
   findAllByRequest(@Param('requestId') requestId: string) {
     return this.documentsService.findAllByRequest(requestId);
   }
@@ -160,7 +162,7 @@ export class DocumentsController {
   @Patch(':id/approve')
   @Permissions('documents:approve')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Approve document' })
+  @ApiOperation({ summary: '[Admin] Approve document' })
   approve(@Param('id') id: string, @Body() dto: ApproveDocumentDto) {
     return this.documentsService.approve(id, dto);
   }
@@ -168,7 +170,7 @@ export class DocumentsController {
   @Patch(':id/reject')
   @Permissions('documents:approve')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Reject document' })
+  @ApiOperation({ summary: '[Admin] Reject document' })
   reject(@Param('id') id: string, @Body() dto: RejectDocumentDto) {
     return this.documentsService.reject(id, dto);
   }
@@ -176,7 +178,7 @@ export class DocumentsController {
   @Post(':id/notes')
   @Permissions('documents:write')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Add admin notes' })
+  @ApiOperation({ summary: '[Admin] Add admin notes' })
   addNotes(@Param('id') id: string, @Body() dto: AddNotesDto) {
     return this.documentsService.addNotes(id, dto);
   }
@@ -184,7 +186,7 @@ export class DocumentsController {
   @Get(':id/preview')
   @Permissions('documents:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Preview document' })
+  @ApiOperation({ summary: '[Admin] Preview document' })
   preview(@Param('id') id: string) {
     return this.documentsService.preview(id);
   }

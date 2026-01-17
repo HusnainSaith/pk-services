@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { FamilyMember } from './entities/family-member.entity';
@@ -108,11 +112,16 @@ export class FamilyMembersService {
     };
   }
 
-  async uploadFamilyMemberDocuments(id: string, files: { [key: string]: Express.Multer.File[] }, dto: any, userId: string) {
+  async uploadFamilyMemberDocuments(
+    id: string,
+    files: { [key: string]: Express.Multer.File[] },
+    dto: any,
+    userId: string,
+  ) {
     const familyMember = await this.familyMemberRepository.findOne({
-      where: { id, userId }
+      where: { id, userId },
     });
-    
+
     if (!familyMember) {
       throw new NotFoundException('Family member not found');
     }
@@ -129,7 +138,7 @@ export class FamilyMembersService {
       dependencyDocuments: 'DEPENDENCY_DOCS',
       disabilityCertificates: 'DISABILITY_CERT',
       studentEnrollment: 'STUDENT_ENROLLMENT',
-      incomeDocuments: 'FAMILY_INCOME'
+      incomeDocuments: 'FAMILY_INCOME',
     };
 
     const uploadedDocuments = [];
@@ -141,7 +150,7 @@ export class FamilyMembersService {
           fileSize: file.size,
           mimeType: file.mimetype,
           documentType: documentTypeMapping[fieldName] || 'OTHER',
-          familyMemberId: id
+          familyMemberId: id,
         });
       }
     }
@@ -149,7 +158,7 @@ export class FamilyMembersService {
     return {
       success: true,
       message: `${uploadedDocuments.length} documents uploaded for family member`,
-      data: uploadedDocuments
+      data: uploadedDocuments,
     };
   }
 }

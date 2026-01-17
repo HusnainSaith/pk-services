@@ -18,6 +18,32 @@ export class DocumentsService {
     private storageService: StorageService,
   ) {}
 
+  /**
+   * Extract S3 key from full URL or return path as-is
+   * @param urlOrPath - Full S3 URL or relative path
+   * @returns S3 key (relative path)
+   */
+  private extractS3Key(urlOrPath: string): string {
+    if (!urlOrPath) return urlOrPath;
+    
+    // If it's a full URL, extract the path after .amazonaws.com/bucket-name/
+    if (urlOrPath.startsWith('http://') || urlOrPath.startsWith('https://')) {
+      const parts = urlOrPath.split('.amazonaws.com/');
+      if (parts.length > 1) {
+        // Further split to remove bucket name if present
+        const pathAfterDomain = parts[1];
+        const bucketName = this.storageService.getBucketName();
+        if (pathAfterDomain.startsWith(bucketName + '/')) {
+          return pathAfterDomain.substring(bucketName.length + 1);
+        }
+        return pathAfterDomain;
+      }
+    }
+    
+    // Already a relative path
+    return urlOrPath;
+  }
+
   // async upload(
   //   file: Express.Multer.File,
   //   dto: any,
@@ -115,7 +141,8 @@ export class DocumentsService {
 
         // Delete old file from S3
         if (document.filePath) {
-          await this.storageService.deleteFile(document.filePath);
+          const s3Key = this.extractS3Key(document.filePath);
+          await this.storageService.deleteFile(s3Key);
         }
 
         // Upload new file to S3
@@ -127,7 +154,7 @@ export class DocumentsService {
         await this.documentRepository.update(id, {
           filename: uploadResult.path.split('/').pop(),
           originalFilename: file.originalname,
-          filePath: uploadResult.path,
+          filePath: uploadResult.publicUrl, // Use full S3 URL instead of relative path
           fileSize: file.size,
           mimeType: file.mimetype,
           updatedAt: new Date(),
@@ -261,7 +288,7 @@ export class DocumentsService {
           category: documentTypeMapping[fieldName] || 'OTHER',
           filename: uploadResult.path.split('/').pop(),
           originalFilename: file.originalname,
-          filePath: uploadResult.path,
+          filePath: uploadResult.publicUrl, // Use full S3 URL instead of relative path
           fileSize: file.size,
           mimeType: file.mimetype,
           status: 'pending',

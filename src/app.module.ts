@@ -12,6 +12,7 @@ import { DocumentsModule } from './modules/documents/documents.module';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { CoursesModule } from './modules/courses/courses.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { CmsModule } from './modules/cms/cms.module';
 import { ReportsModule } from './modules/reports/reports.module';
@@ -58,12 +59,18 @@ import { HealthController } from './health.controller';
             {
               name: 'short',
               ttl: config.get<number>('THROTTLE_TTL', 60000),
-              limit: config.get<number>('THROTTLE_LIMIT', isProduction ? 100 : 300),
+              limit: config.get<number>(
+                'THROTTLE_LIMIT',
+                isProduction ? 100 : 300,
+              ),
             },
             {
               name: 'long',
               ttl: config.get<number>('THROTTLE_LONG_TTL', 3600000), // 1 hour
-              limit: config.get<number>('THROTTLE_LONG_LIMIT', isProduction ? 1000 : 3000),
+              limit: config.get<number>(
+                'THROTTLE_LONG_LIMIT',
+                isProduction ? 1000 : 3000,
+              ),
             },
           ],
         };
@@ -87,6 +94,7 @@ import { HealthController } from './health.controller';
     AppointmentsModule,
     CoursesModule,
     SubscriptionsModule,
+    PaymentsModule,
     NotificationsModule,
     CmsModule,
     ReportsModule,

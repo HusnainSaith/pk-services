@@ -26,7 +26,13 @@ export class ServiceType {
   @Column({ length: 50, nullable: true })
   category: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, name: 'base_price' })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    name: 'base_price',
+  })
   basePrice: number;
 
   @Column({ type: 'jsonb', nullable: true, name: 'required_documents' })

@@ -1,6 +1,11 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { v4 as uuidv4 } from 'uuid';
 import { extname } from 'path';
@@ -17,10 +22,14 @@ export class StorageService {
     this.region = this.configService.get<string>('AWS_REGION') || 'us-east-1';
     this.endpoint = this.configService.get<string>('AWS_S3_ENDPOINT');
     const accessKeyId = this.configService.get<string>('AWS_ACCESS_KEY_ID');
-    const secretAccessKey = this.configService.get<string>('AWS_SECRET_ACCESS_KEY');
+    const secretAccessKey = this.configService.get<string>(
+      'AWS_SECRET_ACCESS_KEY',
+    );
     this.bucket = this.configService.get<string>('AWS_S3_BUCKET');
 
-    this.logger.debug(`S3 Config - Region: ${this.region}, Bucket: ${this.bucket}, Endpoint: ${this.endpoint}`);
+    this.logger.debug(
+      `S3 Config - Region: ${this.region}, Bucket: ${this.bucket}, Endpoint: ${this.endpoint}`,
+    );
 
     if (!accessKeyId || !secretAccessKey || !this.bucket) {
       this.logger.error('AWS S3 configuration is missing');
@@ -32,7 +41,7 @@ export class StorageService {
         accessKeyId,
         secretAccessKey,
       },
-      // Use path-style addressing 
+      // Use path-style addressing
       forcePathStyle: true,
       // Disable signature validation for path-style requests
       s3ForcePathStyle: true,
@@ -46,7 +55,9 @@ export class StorageService {
       // For AWS S3, explicitly set the endpoint to the regional endpoint
       // This helps avoid redirect issues
       clientConfig.endpoint = `https://s3.${this.region}.amazonaws.com`;
-      this.logger.debug(`Using AWS regional endpoint: ${clientConfig.endpoint}`);
+      this.logger.debug(
+        `Using AWS regional endpoint: ${clientConfig.endpoint}`,
+      );
     }
 
     this.s3Client = new S3Client(clientConfig);
@@ -87,8 +98,11 @@ export class StorageService {
       };
     } catch (error) {
       this.logger.error(`Upload failed: ${error.message}`);
-      
-      if (error.Code === 'InvalidAccessKeyId' || error.Code === 'SignatureDoesNotMatch') {
+
+      if (
+        error.Code === 'InvalidAccessKeyId' ||
+        error.Code === 'SignatureDoesNotMatch'
+      ) {
         throw new BadRequestException('AWS credentials invalid');
       }
 
@@ -112,7 +126,9 @@ export class StorageService {
 
   async deleteFile(path: string): Promise<void> {
     try {
-      this.logger.debug(`Deleting S3 object - Bucket: ${this.bucket}, Key: ${path}`);
+      this.logger.debug(
+        `Deleting S3 object - Bucket: ${this.bucket}, Key: ${path}`,
+      );
       const command = new DeleteObjectCommand({
         Bucket: this.bucket,
         Key: path,
@@ -120,11 +136,14 @@ export class StorageService {
       await this.s3Client.send(command);
       this.logger.debug(`Successfully deleted: ${path}`);
     } catch (error) {
-      this.logger.error(`Error deleting file - Key: ${path}, Error: ${error.message}`);
+      this.logger.error(
+        `Error deleting file - Key: ${path}, Error: ${error.message}`,
+      );
       throw new BadRequestException('Failed to delete file');
     }
   }
 
   getBucketName(): string {
     return this.bucket;
-  }}
+  }
+}

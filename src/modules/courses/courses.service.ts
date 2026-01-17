@@ -46,7 +46,7 @@ export class CoursesService extends BaseService<
   async findAll(options?: any): Promise<any> {
     const { skip = 0, take = 20 } = options || {};
     return super.findAll({
-      pagination: { skip, take }
+      pagination: { skip, take },
     });
   }
 

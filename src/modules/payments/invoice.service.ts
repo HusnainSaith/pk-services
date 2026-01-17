@@ -69,6 +69,14 @@ export class InvoiceService {
       // Generate invoice number
       const invoiceNumber = await this.generateInvoiceNumber();
 
+      // Get user with profile for billing info
+      const userWithProfile = await this.userRepository.findOne({
+        where: { id: payment.userId },
+        relations: ['profile'],
+      });
+
+      const profile = userWithProfile?.profile;
+
       // Create invoice record
       const invoice = new Invoice();
       invoice.paymentId = paymentId;
@@ -81,15 +89,15 @@ export class InvoiceService {
       invoice.paidAt = payment.paidAt || new Date();
       invoice.stripeInvoiceId = payment.metadata?.stripeInvoiceId || null;
 
-      // Set billing info
+      // Set billing info from profile
       invoice.billing = {
         name: user.fullName,
         email: user.email,
-        address: user.address || '',
-        city: user.city || '',
-        postalCode: user.postalCode || '',
+        address: profile?.address || '',
+        city: profile?.city || '',
+        postalCode: profile?.postalCode || '',
         country: 'IT',
-        fiscalCode: user.fiscalCode || '',
+        fiscalCode: profile?.fiscalCode || '',
       };
 
       // Create line items
@@ -170,7 +178,11 @@ export class InvoiceService {
 
       // Invoice details
       doc.setFontSize(11);
-      doc.text(`Invoice #: ${invoice.invoiceNumber || invoice.id.slice(0, 8)}`, 20, 75);
+      doc.text(
+        `Invoice #: ${invoice.invoiceNumber || invoice.id.slice(0, 8)}`,
+        20,
+        75,
+      );
       doc.text(
         `Date: ${
           invoice.issuedAt
@@ -227,7 +239,11 @@ export class InvoiceService {
       invoice.lineItems.forEach((item) => {
         doc.text(item.description, colX[0], yPos);
         doc.text(item.quantity.toString(), colX[1], yPos);
-        doc.text(`${Number(item.amount).toFixed(2)} ${item.currency}`, colX[2], yPos);
+        doc.text(
+          `${Number(item.amount).toFixed(2)} ${item.currency}`,
+          colX[2],
+          yPos,
+        );
         yPos += 7;
       });
 
@@ -366,7 +382,9 @@ export class InvoiceService {
     // Get the count of invoices created this year
     const count = await this.invoiceRepository
       .createQueryBuilder('invoice')
-      .where('invoice.invoiceNumber LIKE :prefix', { prefix: `${yearPrefix}-%` })
+      .where('invoice.invoiceNumber LIKE :prefix', {
+        prefix: `${yearPrefix}-%`,
+      })
       .getCount();
 
     // Generate next number with padding

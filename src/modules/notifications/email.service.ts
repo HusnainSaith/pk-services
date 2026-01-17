@@ -56,7 +56,7 @@ export class EmailService {
       <p>Ora puoi accedere ai nostri servizi CAF.</p>
       <p>Cordiali saluti,<br>Il team PK SERVIZI</p>
     `;
-    
+
     return this.sendEmail(user.email, subject, html);
   }
 
@@ -70,11 +70,16 @@ export class EmailService {
       <p>Ti contatteremo presto per l'elaborazione.</p>
       <p>Cordiali saluti,<br>Il team PK SERVIZI</p>
     `;
-    
+
     return this.sendEmail(user.email, subject, html);
   }
 
-  async sendServiceRequestStatusUpdate(user: any, request: any, oldStatus: string, newStatus: string) {
+  async sendServiceRequestStatusUpdate(
+    user: any,
+    request: any,
+    oldStatus: string,
+    newStatus: string,
+  ) {
     const subject = 'Aggiornamento stato richiesta';
     const html = `
       <h2>Stato richiesta aggiornato</h2>
@@ -84,7 +89,7 @@ export class EmailService {
       <p>ID Richiesta: ${request.id}</p>
       <p>Cordiali saluti,<br>Il team PK SERVIZI</p>
     `;
-    
+
     return this.sendEmail(user.email, subject, html);
   }
 
@@ -99,7 +104,7 @@ export class EmailService {
       <p><strong>Servizio:</strong> ${appointment.title}</p>
       <p>Cordiali saluti,<br>Il team PK SERVIZI</p>
     `;
-    
+
     return this.sendEmail(user.email, subject, html);
   }
 
@@ -114,7 +119,7 @@ export class EmailService {
       <p><strong>Servizio:</strong> ${appointment.title}</p>
       <p>Cordiali saluti,<br>Il team PK SERVIZI</p>
     `;
-    
+
     return this.sendEmail(user.email, subject, html);
   }
 
@@ -126,7 +131,7 @@ export class EmailService {
       <p>Il tuo documento <strong>${document.originalFilename}</strong> è stato approvato.</p>
       <p>Cordiali saluti,<br>Il team PK SERVIZI</p>
     `;
-    
+
     return this.sendEmail(user.email, subject, html);
   }
 
@@ -140,7 +145,7 @@ export class EmailService {
       <p>Ti preghiamo di caricare un nuovo documento.</p>
       <p>Cordiali saluti,<br>Il team PK SERVIZI</p>
     `;
-    
+
     return this.sendEmail(user.email, subject, html);
   }
 
@@ -153,7 +158,7 @@ export class EmailService {
       <p>ID Transazione: ${payment.id}</p>
       <p>Cordiali saluti,<br>Il team PK SERVIZI</p>
     `;
-    
+
     return this.sendEmail(user.email, subject, html);
   }
 

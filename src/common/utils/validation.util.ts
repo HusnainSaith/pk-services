@@ -163,7 +163,11 @@ export class ValidationUtil {
   }
 
   static sanitizeLogMessage(message: string): string {
-    return message?.replace(/password|token|secret|key/gi, '***').replace(/[\r\n\t]/g, ' ') || '';
+    return (
+      message
+        ?.replace(/password|token|secret|key/gi, '***')
+        .replace(/[\r\n\t]/g, ' ') || ''
+    );
   }
 
   static createPaginatedResponse(

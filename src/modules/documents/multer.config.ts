@@ -10,7 +10,7 @@ export const multerConfig: MulterOptions = {
     const allowedMimeTypes = [
       'application/pdf',
       'image/jpeg',
-      'image/jpg', 
+      'image/jpg',
       'image/png',
     ];
 

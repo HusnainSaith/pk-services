@@ -69,7 +69,11 @@ export class NotificationsService {
         notification.readAt = new Date();
         notification.isRead = true;
         await this.notificationRepository.save(notification);
-        this.logger.log('Email marked as read at: ' + notification.readAt + ', is_read set to true');
+        this.logger.log(
+          'Email marked as read at: ' +
+            notification.readAt +
+            ', is_read set to true',
+        );
       } else {
         this.logger.log(
           'Email was already marked as read at: ' + notification.readAt,

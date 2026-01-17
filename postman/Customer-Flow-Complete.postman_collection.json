@@ -1,0 +1,667 @@
+{
+  "info": {
+    "name": "PK Servizi - Customer Flow (Complete)",
+    "description": "Complete customer flow with real data - All customer-accessible endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "customerId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "serviceRequestId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "familyMemberId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "appointmentId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Register Customer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', response.data.tokens.accessToken);",
+                  "    pm.collectionVariables.set('refreshToken', response.data.tokens.refreshToken);",
+                  "    pm.collectionVariables.set('customerId', response.data.user.id);",
+                  "    console.log('✅ Customer registered:', response.data.user.email);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"mario.rossi@example.com\",\n  \"password\": \"Customer@12345\",\n  \"fullName\": \"Mario Rossi\",\n  \"phone\": \"+39 348 123 4567\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login Customer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', response.data.tokens.accessToken);",
+                  "    pm.collectionVariables.set('refreshToken', response.data.tokens.refreshToken);",
+                  "    console.log('✅ Customer logged in');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"mario.rossi@example.com\",\n  \"password\": \"Customer@12345\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Profile Management",
+      "item": [
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fiscalCode\": \"RSSMRA85M01H501U\",\n  \"address\": \"Via Roma 123\",\n  \"city\": \"Milano\",\n  \"postalCode\": \"20100\",\n  \"province\": \"MI\",\n  \"birthDate\": \"1985-08-01\",\n  \"birthPlace\": \"Milano\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Update GDPR Consent",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"gdprConsent\": true,\n  \"privacyConsent\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/gdpr-consent",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "gdpr-consent"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Family Members",
+      "item": [
+        {
+          "name": "Create Family Member",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('familyMemberId', response.data.id);",
+                  "    console.log('✅ Family member created:', response.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Giulia Rossi\",\n  \"fiscalCode\": \"RSSGLA90L45H501W\",\n  \"relationship\": \"spouse\",\n  \"birthDate\": \"1990-07-05\",\n  \"isDependent\": true,\n  \"disability\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/family-members",
+              "host": ["{{baseUrl}}"],
+              "path": ["family-members"]
+            }
+          }
+        },
+        {
+          "name": "List Family Members",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/family-members",
+              "host": ["{{baseUrl}}"],
+              "path": ["family-members"]
+            }
+          }
+        },
+        {
+          "name": "Update Family Member",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"disability\": true,\n  \"disabilityType\": \"Visiva\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/family-members/{{familyMemberId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["family-members", "{{familyMemberId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Family Member",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/family-members/{{familyMemberId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["family-members", "{{familyMemberId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Service Types",
+      "item": [
+        {
+          "name": "List Service Types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/service-types",
+              "host": ["{{baseUrl}}"],
+              "path": ["service-types"]
+            }
+          }
+        },
+        {
+          "name": "Get Service Type (ISEE)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/service-types/ISEE_2024",
+              "host": ["{{baseUrl}}"],
+              "path": ["service-types", "ISEE_2024"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Service Requests",
+      "item": [
+        {
+          "name": "Create Service Request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('serviceRequestId', response.data.id);",
+                  "    console.log('✅ Service request created:', response.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceTypeId\": \"{{serviceTypeId}}\",\n  \"formData\": {\n    \"requestType\": \"ISEE 2024\",\n    \"notes\": \"Richiesta ISEE per agevolazioni fiscali\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/service-requests",
+              "host": ["{{baseUrl}}"],
+              "path": ["service-requests"]
+            }
+          }
+        },
+        {
+          "name": "List My Service Requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/service-requests",
+              "host": ["{{baseUrl}}"],
+              "path": ["service-requests"]
+            }
+          }
+        },
+        {
+          "name": "Get Service Request",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/service-requests/{{serviceRequestId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["service-requests", "{{serviceRequestId}}"]
+            }
+          }
+        },
+        {
+          "name": "Submit Service Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/service-requests/{{serviceRequestId}}/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["service-requests", "{{serviceRequestId}}", "submit"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Appointments",
+      "item": [
+        {
+          "name": "Get Available Slots",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/appointments/available-slots?date=2025-02-01&duration=60",
+              "host": ["{{baseUrl}}"],
+              "path": ["appointments", "available-slots"],
+              "query": [
+                {"key": "date", "value": "2025-02-01"},
+                {"key": "duration", "value": "60"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Book Appointment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('appointmentId', response.data.id);",
+                  "    console.log('✅ Appointment booked:', response.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceTypeId\": \"{{serviceTypeId}}\",\n  \"title\": \"Appuntamento ISEE\",\n  \"description\": \"Consulenza per pratica ISEE\",\n  \"appointmentDate\": \"2025-02-15T10:00:00Z\",\n  \"durationMinutes\": 60\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/appointments",
+              "host": ["{{baseUrl}}"],
+              "path": ["appointments"]
+            }
+          }
+        },
+        {
+          "name": "List My Appointments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/appointments/my",
+              "host": ["{{baseUrl}}"],
+              "path": ["appointments", "my"]
+            }
+          }
+        },
+        {
+          "name": "Reschedule Appointment",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"appointmentDate\": \"2025-02-16T14:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/appointments/{{appointmentId}}/reschedule",
+              "host": ["{{baseUrl}}"],
+              "path": ["appointments", "{{appointmentId}}", "reschedule"]
+            }
+          }
+        },
+        {
+          "name": "Cancel Appointment",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/appointments/{{appointmentId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["appointments", "{{appointmentId}}", "cancel"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Subscriptions",
+      "item": [
+        {
+          "name": "List Subscription Plans",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/subscription-plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscription-plans"]
+            }
+          }
+        },
+        {
+          "name": "Get My Subscription",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/my",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "my"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Payments",
+      "item": [
+        {
+          "name": "List My Payments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payments/my",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "my"]
+            }
+          }
+        },
+        {
+          "name": "List My Invoices",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payments/invoices",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "invoices"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Notifications",
+      "item": [
+        {
+          "name": "List Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications"]
+            }
+          }
+        },
+        {
+          "name": "Get Unread Count",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/unread-count",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "unread-count"]
+            }
+          }
+        },
+        {
+          "name": "Mark All as Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/read-all",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "read-all"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Courses",
+      "item": [
+        {
+          "name": "List Courses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/courses",
+              "host": ["{{baseUrl}}"],
+              "path": ["courses"]
+            }
+          }
+        },
+        {
+          "name": "List My Enrollments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/courses/my-enrollments",
+              "host": ["{{baseUrl}}"],
+              "path": ["courses", "my-enrollments"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. CMS Content",
+      "item": [
+        {
+          "name": "List FAQs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/faqs",
+              "host": ["{{baseUrl}}"],
+              "path": ["cms", "faqs"]
+            }
+          }
+        },
+        {
+          "name": "List News",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/news",
+              "host": ["{{baseUrl}}"],
+              "path": ["cms", "news"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -24,25 +24,25 @@ export class CmsController {
 
   // Public Routes
   @Get('pages/:slug')
-  @ApiOperation({ summary: 'Get page by slug' })
+  @ApiOperation({ summary: '[Public] Get page by slug' })
   getPageBySlug(@Param('slug') slug: string) {
     return this.cmsService.getPageBySlug(slug);
   }
 
   @Get('news')
-  @ApiOperation({ summary: 'List published news' })
+  @ApiOperation({ summary: '[Public] List published news' })
   getPublishedNews() {
     return this.cmsService.getPublishedNews();
   }
 
   @Get('news/:id')
-  @ApiOperation({ summary: 'Get news article' })
+  @ApiOperation({ summary: '[Public] Get news article' })
   getNewsArticle(@Param('id') id: string) {
     return this.cmsService.getNewsArticle(id);
   }
 
   @Get('faqs')
-  @ApiOperation({ summary: 'List FAQs' })
+  @ApiOperation({ summary: '[Public] List FAQs' })
   getFaqs() {
     return this.cmsService.getFaqs();
   }
@@ -52,7 +52,7 @@ export class CmsController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('cms:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'List all content' })
+  @ApiOperation({ summary: '[Admin] List all content' })
   findAllContent() {
     return this.cmsService.findAllContent();
   }
@@ -61,7 +61,7 @@ export class CmsController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('cms:write')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Create content' })
+  @ApiOperation({ summary: '[Admin] Create content' })
   createContent(@Body() dto: CreateContentDto) {
     return this.cmsService.createContent(dto);
   }
@@ -70,7 +70,7 @@ export class CmsController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('cms:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get content' })
+  @ApiOperation({ summary: '[Admin] Get content' })
   getContent(@Param('id') id: string) {
     return this.cmsService.getContent(id);
   }
@@ -79,7 +79,7 @@ export class CmsController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('cms:write')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Update content' })
+  @ApiOperation({ summary: '[Admin] Update content' })
   updateContent(@Param('id') id: string, @Body() dto: UpdateContentDto) {
     return this.cmsService.updateContent(id, dto);
   }
@@ -88,7 +88,7 @@ export class CmsController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('cms:delete')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Delete content' })
+  @ApiOperation({ summary: '[Admin] Delete content' })
   deleteContent(@Param('id') id: string) {
     return this.cmsService.deleteContent(id);
   }
@@ -97,7 +97,7 @@ export class CmsController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('cms:write')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Publish content' })
+  @ApiOperation({ summary: '[Admin] Publish content' })
   publishContent(@Param('id') id: string) {
     return this.cmsService.publishContent(id);
   }
@@ -107,7 +107,7 @@ export class CmsController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('cms:write')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Create new page' })
+  @ApiOperation({ summary: '[Admin] Create new page' })
   createPage(@Body() dto: CreateContentDto) {
     return this.cmsService.createPage(dto);
   }
@@ -116,7 +116,7 @@ export class CmsController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('cms:write')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Update page' })
+  @ApiOperation({ summary: '[Admin] Update page' })
   updatePage(@Param('slug') slug: string, @Body() dto: UpdateContentDto) {
     return this.cmsService.updatePage(slug, dto);
   }
@@ -125,7 +125,7 @@ export class CmsController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('cms:delete')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Delete page' })
+  @ApiOperation({ summary: '[Admin] Delete page' })
   deletePage(@Param('slug') slug: string) {
     return this.cmsService.deletePage(slug);
   }
@@ -135,7 +135,7 @@ export class CmsController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('cms:write')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Create news article' })
+  @ApiOperation({ summary: '[Admin] Create news article' })
   createNews(@Body() dto: CreateContentDto) {
     return this.cmsService.createNews(dto);
   }
@@ -144,7 +144,7 @@ export class CmsController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('cms:write')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Update news' })
+  @ApiOperation({ summary: '[Admin] Update news' })
   updateNews(@Param('id') id: string, @Body() dto: UpdateContentDto) {
     return this.cmsService.updateNews(id, dto);
   }
@@ -153,7 +153,7 @@ export class CmsController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('cms:delete')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Delete news' })
+  @ApiOperation({ summary: '[Admin] Delete news' })
   deleteNews(@Param('id') id: string) {
     return this.cmsService.deleteNews(id);
   }
@@ -163,7 +163,7 @@ export class CmsController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('cms:write')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Create FAQ' })
+  @ApiOperation({ summary: '[Admin] Create FAQ' })
   createFaq(@Body() dto: CreateContentDto) {
     return this.cmsService.createFaq(dto);
   }
@@ -172,7 +172,7 @@ export class CmsController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('cms:write')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Update FAQ' })
+  @ApiOperation({ summary: '[Admin] Update FAQ' })
   updateFaq(@Param('id') id: string, @Body() dto: UpdateContentDto) {
     return this.cmsService.updateFaq(id, dto);
   }
@@ -181,7 +181,7 @@ export class CmsController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('cms:delete')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Delete FAQ' })
+  @ApiOperation({ summary: '[Admin] Delete FAQ' })
   deleteFaq(@Param('id') id: string) {
     return this.cmsService.deleteFaq(id);
   }

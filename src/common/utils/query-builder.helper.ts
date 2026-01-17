@@ -25,16 +25,16 @@ export class QueryBuilderHelper {
     options: PaginationOptions,
   ): SelectQueryBuilder<T> {
     const { page, limit, skip, take } = options;
-    
+
     if (skip !== undefined && take !== undefined) {
       return qb.skip(skip).take(take);
     }
-    
+
     if (page && limit) {
       const offset = (page - 1) * limit;
       return qb.skip(offset).take(limit);
     }
-    
+
     return qb;
   }
 
@@ -54,7 +54,7 @@ export class QueryBuilderHelper {
         qb.addOrderBy(field, sort.direction);
       }
     });
-    
+
     return qb;
   }
 
@@ -77,7 +77,7 @@ export class QueryBuilderHelper {
         }
       }
     });
-    
+
     return qb;
   }
 
@@ -92,15 +92,15 @@ export class QueryBuilderHelper {
     alias?: string,
   ): SelectQueryBuilder<T> {
     const fieldName = alias ? `${alias}.${field}` : field;
-    
+
     if (startDate) {
       qb.andWhere(`${fieldName} >= :startDate`, { startDate });
     }
-    
+
     if (endDate) {
       qb.andWhere(`${fieldName} <= :endDate`, { endDate });
     }
-    
+
     return qb;
   }
 
@@ -116,15 +116,15 @@ export class QueryBuilderHelper {
     if (!searchTerm || fields.length === 0) {
       return qb;
     }
-    
+
     const searchConditions = fields
       .map((field) => `${alias}.${field} ILIKE :searchTerm`)
       .join(' OR ');
-    
+
     qb.andWhere(`(${searchConditions})`, {
       searchTerm: `%${searchTerm}%`,
     });
-    
+
     return qb;
   }
 
@@ -142,10 +142,10 @@ export class QueryBuilderHelper {
     limit: number;
   }> {
     const { page = 1, limit = 20 } = options;
-    
+
     const [data, total] = await qb.getManyAndCount();
     const pages = Math.ceil(total / limit);
-    
+
     return {
       data,
       total,
@@ -170,32 +170,38 @@ export class QueryBuilderHelper {
     alias: string,
   ): SelectQueryBuilder<T> {
     const { pagination, sorting, filters, search, dateRange } = options;
-    
+
     // Apply filters
     if (filters) {
       this.applyFilters(qb, filters, alias);
     }
-    
+
     // Apply search
     if (search?.term && search?.fields) {
       this.applySearch(qb, search.term, search.fields, alias);
     }
-    
+
     // Apply date range
     if (dateRange) {
-      this.applyDateRange(qb, dateRange.field, dateRange.start, dateRange.end, alias);
+      this.applyDateRange(
+        qb,
+        dateRange.field,
+        dateRange.start,
+        dateRange.end,
+        alias,
+      );
     }
-    
+
     // Apply sorting
     if (sorting && sorting.length > 0) {
       this.applySorting(qb, sorting, alias);
     }
-    
+
     // Apply pagination
     if (pagination) {
       this.applyPagination(qb, pagination);
     }
-    
+
     return qb;
   }
 }

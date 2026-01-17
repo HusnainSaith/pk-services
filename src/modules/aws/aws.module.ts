@@ -9,7 +9,7 @@ import { StorageService } from '../../common/services/storage.service';
 /**
  * AWS Module
  * Provides AWS S3 integration and folder structure management
- * 
+ *
  * Features:
  * - Automatic user folder structure creation on registration
  * - Profile image storage management

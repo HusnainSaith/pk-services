@@ -3,10 +3,17 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Payment } from '../payments/entities/payment.entity';
 import { UserSubscription } from '../subscriptions/entities/user-subscription.entity';
+import { User } from '../users/entities/user.entity';
 import { StripeService } from '../payments/stripe.service';
 import { InvoiceService } from '../payments/invoice.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { User } from '../users/entities/user.entity';
+import {
+  StripeCheckoutSession,
+  StripeSubscription,
+  StripePaymentIntent,
+  StripeInvoice,
+  WebhookResponse,
+} from '../../common/interfaces/webhook-events.interface';
 
 @Injectable()
 export class WebhooksService {
@@ -25,7 +32,10 @@ export class WebhooksService {
     private notificationsService: NotificationsService,
   ) {}
 
-  async handleStripeWebhook(body: any, signature: string): Promise<any> {
+  async handleStripeWebhook(
+    body: Buffer | string,
+    signature: string,
+  ): Promise<WebhookResponse> {
     try {
       const event = await this.stripeService.constructWebhookEvent(
         body,
@@ -35,7 +45,7 @@ export class WebhooksService {
       this.logger.log('Received webhook event: ' + event.type);
       this.logger.log('Webhook signature verified successfully');
 
-      let result: any = { received: true, processed: false };
+      let result: WebhookResponse = { received: true, processed: false };
 
       switch (event.type) {
         case 'checkout.session.completed':
@@ -69,20 +79,23 @@ export class WebhooksService {
 
       // Log webhook
       this.logWebhookEvent({
-        event: event.type,
-        status: 'processed',
-        data: result,
+        eventId: event.id,
+        eventType: event.type,
+        status: 'completed',
+        processed: true,
       });
 
       return result;
     } catch (error) {
       this.logger.error('Webhook processing error: ' + error.message);
       this.logWebhookEvent({
-        event: 'error',
+        eventId: 'error',
+        eventType: 'error',
         status: 'failed',
+        processed: false,
         error: error.message,
       });
-      return { received: false, error: error.message };
+      return { received: false, processed: false, error: error.message };
     }
   }
 
@@ -90,7 +103,9 @@ export class WebhooksService {
    * Handle checkout.session.completed event
    * This is triggered when a user completes the Stripe Checkout payment
    */
-  private async handleCheckoutSessionCompleted(session: any): Promise<any> {
+  private async handleCheckoutSessionCompleted(
+    session: StripeCheckoutSession,
+  ): Promise<WebhookResponse> {
     try {
       this.logger.log('Processing checkout session: ' + session.id);
 
@@ -105,7 +120,7 @@ export class WebhooksService {
 
       // Find the pending subscription for this user
       this.logger.log('Looking for pending subscription for user: ' + userId);
-      
+
       const userSubscription = await this.userSubscriptionRepository.findOne({
         where: {
           userId,
@@ -117,7 +132,7 @@ export class WebhooksService {
 
       if (!userSubscription) {
         this.logger.error('No pending subscription found for user ' + userId);
-        
+
         // Check if there are any subscriptions for this user
         const allSubs = await this.userSubscriptionRepository.find({
           where: { userId },
@@ -127,7 +142,7 @@ export class WebhooksService {
         if (allSubs.length > 0) {
           this.logger.log('Latest subscription status: ' + allSubs[0].status);
         }
-        
+
         return {
           received: true,
           processed: false,
@@ -151,12 +166,17 @@ export class WebhooksService {
       }
       userSubscription.endDate = endDate;
 
-      const savedSubscription = await this.userSubscriptionRepository.save(userSubscription);
+      const savedSubscription =
+        await this.userSubscriptionRepository.save(userSubscription);
 
       this.logger.log('Subscription activated for user: ' + userId);
       this.logger.log('Updated subscription ID: ' + savedSubscription.id);
-      this.logger.log('Updated subscription status: ' + savedSubscription.status);
-      this.logger.log('Stripe subscription ID: ' + savedSubscription.stripeSubscriptionId);
+      this.logger.log(
+        'Updated subscription status: ' + savedSubscription.status,
+      );
+      this.logger.log(
+        'Stripe subscription ID: ' + savedSubscription.stripeSubscriptionId,
+      );
 
       // Create payment record
       const payment = this.paymentRepository.create({
@@ -310,7 +330,9 @@ export class WebhooksService {
     }
   }
 
-  private async handlePaymentIntentSucceeded(paymentIntent: any): Promise<any> {
+  private async handlePaymentIntentSucceeded(
+    paymentIntent: StripePaymentIntent,
+  ): Promise<WebhookResponse> {
     try {
       const payment = await this.paymentRepository.findOne({
         where: { stripePaymentIntentId: paymentIntent.id },
@@ -332,12 +354,16 @@ export class WebhooksService {
     }
   }
 
-  private async handleSubscriptionCreated(subscription: any): Promise<any> {
+  private async handleSubscriptionCreated(
+    subscription: StripeSubscription,
+  ): Promise<WebhookResponse> {
     this.logger.log('Subscription created: ' + subscription.id);
     return { received: true, processed: true, action: 'subscription_created' };
   }
 
-  private async handlePaymentIntentFailed(paymentIntent: any): Promise<any> {
+  private async handlePaymentIntentFailed(
+    paymentIntent: StripePaymentIntent,
+  ): Promise<WebhookResponse> {
     const payment = await this.paymentRepository.findOne({
       where: { metadata: { stripePaymentIntentId: paymentIntent.id } },
     });
@@ -351,7 +377,9 @@ export class WebhooksService {
     return { received: true, processed: true, action: 'payment_failed' };
   }
 
-  private async handleSubscriptionUpdated(subscription: any): Promise<any> {
+  private async handleSubscriptionUpdated(
+    subscription: StripeSubscription,
+  ): Promise<WebhookResponse> {
     const userSubscription = await this.userSubscriptionRepository
       .createQueryBuilder('us')
       .where('us.stripeSubscriptionId = :id', { id: subscription.id })
@@ -366,7 +394,9 @@ export class WebhooksService {
     return { received: true, processed: true, action: 'subscription_updated' };
   }
 
-  private async handleSubscriptionDeleted(subscription: any): Promise<any> {
+  private async handleSubscriptionDeleted(
+    subscription: StripeSubscription,
+  ): Promise<WebhookResponse> {
     const userSubscription = await this.userSubscriptionRepository
       .createQueryBuilder('us')
       .where('us.stripeSubscriptionId = :id', { id: subscription.id })
@@ -386,7 +416,9 @@ export class WebhooksService {
     };
   }
 
-  private async handleInvoicePaid(invoice: any): Promise<any> {
+  private async handleInvoicePaid(
+    invoice: StripeInvoice,
+  ): Promise<WebhookResponse> {
     this.logger.log('Invoice paid: ' + invoice.id);
 
     const payment = await this.paymentRepository.findOne({
@@ -403,7 +435,9 @@ export class WebhooksService {
     return { received: true, processed: true, action: 'invoice_paid' };
   }
 
-  private async handleInvoicePaymentFailed(invoice: any): Promise<any> {
+  private async handleInvoicePaymentFailed(
+    invoice: StripeInvoice,
+  ): Promise<WebhookResponse> {
     this.logger.warn('Invoice payment failed: ' + invoice.id);
     return {
       received: true,
@@ -413,8 +447,12 @@ export class WebhooksService {
   }
 
   // Extended Operations - Testing & Logging
-  async testStripeWebhook(testPayload: any): Promise<any> {
+  async testStripeWebhook(
+    testPayload: Record<string, unknown>,
+  ): Promise<WebhookResponse> {
     return {
+      received: true,
+      processed: true,
       success: true,
       message: 'Test webhook processed',
       data: {
@@ -435,15 +473,21 @@ export class WebhooksService {
     };
   }
 
-  private logWebhookEvent(log: any): void {
+  private logWebhookEvent(log: {
+    eventId: string;
+    eventType: string;
+    status: string;
+    processed: boolean;
+    error?: string;
+  }): void {
     const logEntry = {
       id: 'log_' + Date.now(),
       webhook: 'stripe',
-      event: log.event,
+      event: log.eventType,
       status: log.status,
       processedAt: new Date(),
       processingTime: Math.random() * 500, // Simulated
-      data: log.data,
+      error: log.error,
     };
     this.webhookLogs.push(logEntry);
     // Keep only last 100 logs in memory

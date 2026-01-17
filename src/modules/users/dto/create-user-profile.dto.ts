@@ -1,4 +1,11 @@
-import { IsOptional, IsString, IsBoolean, IsDateString, IsNumber, MaxLength, Min } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsBoolean,
+  IsDateString,
+  MaxLength,
+  Length,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateUserProfileDto {
@@ -15,109 +22,51 @@ export class CreateUserProfileDto {
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @IsDateString()
-  dateOfBirth?: string;
+  @IsString()
+  @Length(16, 16)
+  fiscalCode?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
-  @MaxLength(20)
-  gender?: string;
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  nationality?: string;
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  idCardNumber?: string;
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsDateString()
-  idCardExpiry?: string;
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  passportNumber?: string;
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsDateString()
-  passportExpiry?: string;
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsString()
-  @MaxLength(20)
-  maritalStatus?: string;
+  address?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
   @MaxLength(100)
-  occupation?: string;
+  city?: string;
 
   @ApiProperty({ required: false })
-  @IsOptional()
-  @IsString()
-  @MaxLength(200)
-  employer?: string;
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  monthlyIncome?: number;
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsString()
-  @MaxLength(255)
-  emergencyContactName?: string;
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsString()
-  @MaxLength(20)
-  emergencyContactPhone?: string;
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  emergencyContactRelationship?: string;
-
-  @ApiProperty({ required: false, default: 'it' })
   @IsOptional()
   @IsString()
   @MaxLength(10)
-  preferredLanguage?: string;
+  postalCode?: string;
 
-  @ApiProperty({ required: false, default: 'email' })
+  @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
-  @MaxLength(20)
-  preferredCommunication?: string;
+  @MaxLength(2)
+  province?: string;
 
-  @ApiProperty({ required: false, default: true })
+  @ApiProperty({ required: false })
   @IsOptional()
-  @IsBoolean()
-  notificationsEnabled?: boolean;
+  @IsDateString()
+  birthDate?: string;
 
-  @ApiProperty({ required: false, default: true })
+  @ApiProperty({ required: false })
   @IsOptional()
-  @IsBoolean()
-  emailNotifications?: boolean;
+  @IsString()
+  @MaxLength(100)
+  birthPlace?: string;
 
   @ApiProperty({ required: false, default: false })
   @IsOptional()
   @IsBoolean()
-  smsNotifications?: boolean;
+  gdprConsent?: boolean;
+
+  @ApiProperty({ required: false, default: false })
+  @IsOptional()
+  @IsBoolean()
+  privacyConsent?: boolean;
 }

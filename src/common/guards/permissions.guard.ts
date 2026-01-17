@@ -57,9 +57,14 @@ export class PermissionsGuard implements CanActivate {
       if (userWithRole.role.permissions) {
         try {
           const rolePermissions = JSON.parse(userWithRole.role.permissions);
-          userPermissions = rolePermissions.flatMap((perm: any) => 
-            perm.actions.map((action: string) => `${perm.resource}:${action}`)
-          );
+          userPermissions = rolePermissions.flatMap((perm: any) => {
+            if (!perm || !perm.actions || !Array.isArray(perm.actions)) {
+              return [];
+            }
+            return perm.actions.map(
+              (action: string) => `${perm.resource}:${action}`,
+            );
+          });
         } catch (e) {
           console.error('Error parsing role permissions:', e);
         }
@@ -68,24 +73,95 @@ export class PermissionsGuard implements CanActivate {
       // Add hardcoded customer permissions for backward compatibility
       if (userWithRole.role.name === 'customer') {
         const customerPermissions = [
+          // Auth permissions
+          'auth:logout',
+          'auth:change-password',
+          'auth:read-profile',
+
+          // User profile permissions
+          'users:read',
           'users:read_own',
-          'users:write_own', 
-          'family_members:read_own',
-          'family_members:write_own',
-          'family_members:delete_own',
-          'service_requests:read_own',
-          'service_requests:write_own',
+          'users:write_own',
+          'users:update',
+          'users:update_own',
+          'profiles:read',
+          'profiles:read_own',
+          'profiles:update',
+          'profiles:update_own',
+
+          // Family members
+          'family-members:create',
+          'family-members:read',
+          'family-members:read_own',
+          'family-members:create_own',
+          'family-members:update',
+          'family-members:update_own',
+          'family-members:delete',
+          'family-members:delete_own',
+
+          // Service requests
+          'service-requests:create',
+          'service-requests:read',
+          'service-requests:read_own',
+          'service-requests:update',
+          'service-requests:update_own',
+          'service-requests:delete',
+          'service-requests:delete_own',
+
+          // Documents
+          'documents:create',
+          'documents:read',
           'documents:read_own',
-          'documents:write_own',
+          'documents:create_own',
+          'documents:upload',
+          'documents:upload_own',
+          'documents:delete',
+          'documents:delete_own',
+
+          // Appointments
+          'appointments:create',
+          'appointments:read',
           'appointments:read_own',
-          'appointments:write_own',
+          'appointments:update',
+          'appointments:update_own',
+          'appointments:cancel',
+          'appointments:cancel_own',
+
+          // Notifications
+          'notifications:read',
           'notifications:read_own',
+          'notifications:update',
+          'notifications:update_own',
+          'notifications:delete',
+          'notifications:delete_own',
+
+          // Courses
+          'courses:read',
           'courses:read_own',
-          'courses:write_own',
+          'courses:enroll',
+
+          // Subscriptions
+          'subscriptions:read',
           'subscriptions:read_own',
-          'subscriptions:write_own',
+          'subscriptions:create',
+          'subscriptions:update',
+          'subscriptions:update_own',
+          'subscriptions:cancel',
+          'subscriptions:cancel_own',
+
+          // Payments & Invoices
+          'payments:read',
           'payments:read_own',
-          'payments:write_own'
+          'payments:create',
+          'payments:create_own',
+          'invoices:read',
+          'invoices:read_own',
+          'invoices:download',
+          'invoices:download_own',
+
+          // GDPR
+          'gdpr:request_export',
+          'gdpr:request_deletion',
         ];
         userPermissions = [...userPermissions, ...customerPermissions];
       }

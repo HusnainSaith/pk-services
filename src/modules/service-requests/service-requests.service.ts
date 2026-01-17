@@ -78,7 +78,11 @@ export class ServiceRequestsService {
   private async verifySubscriptionAccess(
     userId: string,
     serviceTypeCode: string,
-  ): Promise<{ isValid: boolean; subscription?: UserSubscription; message?: string }> {
+  ): Promise<{
+    isValid: boolean;
+    subscription?: UserSubscription;
+    message?: string;
+  }> {
     // Get user's active subscription
     const subscription = await this.userSubscriptionRepository.findOne({
       where: { userId, status: 'active' },
@@ -88,7 +92,8 @@ export class ServiceRequestsService {
     if (!subscription) {
       return {
         isValid: false,
-        message: 'Active subscription required. Please subscribe to use services.',
+        message:
+          'Active subscription required. Please subscribe to use services.',
       };
     }
 
@@ -112,7 +117,10 @@ export class ServiceRequestsService {
 
     // Check if service is enabled in user's plan (using serviceLimits)
     // All services are enabled by default unless explicitly disabled in serviceLimits
-    if (plan.serviceLimits && plan.serviceLimits[serviceTypeCode.toLowerCase().replace('_', '')] === 0) {
+    if (
+      plan.serviceLimits &&
+      plan.serviceLimits[serviceTypeCode.toLowerCase().replace('_', '')] === 0
+    ) {
       return {
         isValid: false,
         message: `Service "${serviceTypeCode}" is not included in your subscription plan.`,
@@ -158,15 +166,22 @@ export class ServiceRequestsService {
    * Create a new service request (Draft)
    * CRITICAL: Only allowed for users with active subscription
    */
-  async create(dto: CreateServiceRequestDto, userId: string, serviceTypeCode?: string): Promise<any> {
+  async create(
+    dto: CreateServiceRequestDto,
+    userId: string,
+    serviceTypeCode?: string,
+  ): Promise<any> {
     try {
       // Validate service type exists and is active
       let serviceType;
-      
+
       if (serviceTypeCode) {
         // Check if it's a UUID or code
-        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(serviceTypeCode);
-        
+        const isUUID =
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+            serviceTypeCode,
+          );
+
         if (isUUID) {
           serviceType = await this.serviceTypeRepository.findOne({
             where: { id: serviceTypeCode, isActive: true },
@@ -194,9 +209,8 @@ export class ServiceRequestsService {
       serviceRequest.status = SERVICE_REQUEST_STATUSES.DRAFT;
       serviceRequest.formData = {};
 
-      const savedRequest = await this.serviceRequestRepository.save(
-        serviceRequest,
-      );
+      const savedRequest =
+        await this.serviceRequestRepository.save(serviceRequest);
 
       // Create type-specific request record
       const code = serviceTypeCode || 'ISEE';
@@ -213,7 +227,9 @@ export class ServiceRequestsService {
             break;
         }
       } catch (error) {
-        this.logger.warn(`Type-specific record creation failed for ${code}: ${error.message}`);
+        this.logger.warn(
+          `Type-specific record creation failed for ${code}: ${error.message}`,
+        );
         // Continue without type-specific data
       }
 
@@ -226,7 +242,9 @@ export class ServiceRequestsService {
         notes: 'Initial draft creation',
       });
 
-      this.logger.log(`Service request created: ${savedRequest.id} for user: ${userId}`);
+      this.logger.log(
+        `Service request created: ${savedRequest.id} for user: ${userId}`,
+      );
 
       return {
         success: true,
@@ -249,7 +267,10 @@ export class ServiceRequestsService {
   /**
    * Create ISEE service request
    */
-  private async createIseeRequest(serviceRequestId: string, dto: CreateIseeRequestDto) {
+  private async createIseeRequest(
+    serviceRequestId: string,
+    dto: CreateIseeRequestDto,
+  ) {
     const iseeRequest = new IseeRequest();
     iseeRequest.serviceRequestId = serviceRequestId;
     Object.assign(iseeRequest, dto);
@@ -259,7 +280,10 @@ export class ServiceRequestsService {
   /**
    * Create Modello 730 service request
    */
-  private async createModello730Request(serviceRequestId: string, dto: CreateModello730RequestDto) {
+  private async createModello730Request(
+    serviceRequestId: string,
+    dto: CreateModello730RequestDto,
+  ) {
     const modelloRequest = new Modello730Request();
     modelloRequest.serviceRequestId = serviceRequestId;
     Object.assign(modelloRequest, dto);
@@ -269,7 +293,10 @@ export class ServiceRequestsService {
   /**
    * Create IMU service request
    */
-  private async createImuRequest(serviceRequestId: string, dto: CreateImuRequestDto) {
+  private async createImuRequest(
+    serviceRequestId: string,
+    dto: CreateImuRequestDto,
+  ) {
     const imuRequest = new ImuRequest();
     imuRequest.serviceRequestId = serviceRequestId;
     Object.assign(imuRequest, dto);
@@ -279,10 +306,7 @@ export class ServiceRequestsService {
   /**
    * Get user's service requests
    */
-  async findByUser(
-    userId: string,
-    options: any = {},
-  ): Promise<any> {
+  async findByUser(userId: string, options: any = {}): Promise<any> {
     try {
       const query = this.serviceRequestRepository
         .createQueryBuilder('sr')
@@ -342,29 +366,41 @@ export class ServiceRequestsService {
         request.userId !== userId &&
         !['admin', 'operator'].includes(userRole)
       ) {
-        throw new ForbiddenException(
-          'Not authorized to view this request',
-        );
+        throw new ForbiddenException('Not authorized to view this request');
       }
 
-      // Load type-specific data
+      // Load type-specific data in parallel with other data
       let typeSpecificData = {};
       try {
+        let typeData: any = null;
         if (request.serviceType.code === 'ISEE') {
-          typeSpecificData = await this.iseeRequestRepository.findOne({
-            where: { serviceRequestId: id },
-          }) || {};
+          typeData =
+            (await this.iseeRequestRepository.findOne({
+              where: { serviceRequestId: id },
+            })) || {};
         } else if (request.serviceType.code === 'MODELLO_730') {
-          typeSpecificData = await this.modello730RequestRepository.findOne({
-            where: { serviceRequestId: id },
-          }) || {};
+          typeData =
+            (await this.modello730RequestRepository.findOne({
+              where: { serviceRequestId: id },
+            })) || {};
         } else if (request.serviceType.code === 'IMU') {
-          typeSpecificData = await this.imuRequestRepository.findOne({
-            where: { serviceRequestId: id },
-          }) || {};
+          typeData =
+            (await this.imuRequestRepository.findOne({
+              where: { serviceRequestId: id },
+            })) || {};
+        }
+        
+        // Exclude the type-specific 'id' field to prevent overwriting the main request ID
+        if (typeData && typeData.id) {
+          const { id: _typeId, ...restTypeData } = typeData;
+          typeSpecificData = restTypeData;
+        } else {
+          typeSpecificData = typeData || {};
         }
       } catch (error) {
-        this.logger.warn(`Type-specific data not available for ${request.serviceType.code}: ${error.message}`);
+        this.logger.warn(
+          `Type-specific data not available for ${request.serviceType.code}: ${error.message}`,
+        );
         typeSpecificData = {};
       }
 
@@ -372,7 +408,7 @@ export class ServiceRequestsService {
         success: true,
         data: {
           ...request,
-          typeSpecificData,
+          ...typeSpecificData, // Merge instead of nesting
         },
       };
     } catch (error) {
@@ -447,7 +483,9 @@ export class ServiceRequestsService {
             break;
         }
       } catch (error) {
-        this.logger.warn(`Type-specific data update failed for ${code}: ${error.message}`);
+        this.logger.warn(
+          `Type-specific data update failed for ${code}: ${error.message}`,
+        );
         // Continue without type-specific data update
       }
 
@@ -487,9 +525,7 @@ export class ServiceRequestsService {
       }
 
       if (request.status !== SERVICE_REQUEST_STATUSES.DRAFT) {
-        throw new ConflictException(
-          'Only draft requests can be submitted',
-        );
+        throw new ConflictException('Only draft requests can be submitted');
       }
 
       if (request.userId !== userId) {
@@ -589,7 +625,9 @@ export class ServiceRequestsService {
         notes: reason || `Status changed to ${normalizedStatus}`,
       });
 
-      this.logger.log(`Service request status updated: ${id} from ${oldStatus} to ${normalizedStatus}`);
+      this.logger.log(
+        `Service request status updated: ${id} from ${oldStatus} to ${normalizedStatus}`,
+      );
 
       return {
         success: true,
@@ -604,7 +642,10 @@ export class ServiceRequestsService {
       };
     } catch (error) {
       this.logger.error(`Failed to update status: ${error.message}`);
-      if (error instanceof NotFoundException || error instanceof ConflictException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ConflictException
+      ) {
         throw error;
       }
       throw new BadRequestException(error.message);
@@ -614,11 +655,7 @@ export class ServiceRequestsService {
   /**
    * Add note to request
    */
-  async addNote(
-    id: string,
-    dto: AddNoteDto,
-    userId: string,
-  ): Promise<any> {
+  async addNote(id: string, dto: AddNoteDto, userId: string): Promise<any> {
     try {
       const request = await this.serviceRequestRepository.findOne({
         where: { id },
@@ -700,9 +737,7 @@ export class ServiceRequestsService {
       }
 
       if (request.status !== SERVICE_REQUEST_STATUSES.DRAFT) {
-        throw new ConflictException(
-          'Only draft requests can be deleted',
-        );
+        throw new ConflictException('Only draft requests can be deleted');
       }
 
       if (request.userId !== userId) {
@@ -730,9 +765,24 @@ export class ServiceRequestsService {
     try {
       const qb = this.serviceRequestRepository
         .createQueryBuilder('sr')
-        .leftJoinAndSelect('sr.serviceType', 'st')
-        .leftJoinAndSelect('sr.user', 'u')
-        .leftJoinAndSelect('sr.assignedOperator', 'ao');
+        .leftJoin('sr.serviceType', 'st')
+        .leftJoin('sr.user', 'u')
+        .leftJoin('sr.assignedOperator', 'ao')
+        .select([
+          'sr.id',
+          'sr.status',
+          'sr.priority',
+          'sr.createdAt',
+          'sr.updatedAt',
+          'st.id',
+          'st.name',
+          'st.code',
+          'u.id',
+          'u.fullName',
+          'u.email',
+          'ao.id',
+          'ao.fullName',
+        ]);
 
       // Apply filters
       if (query.status) {
@@ -741,8 +791,11 @@ export class ServiceRequestsService {
 
       if (query.serviceTypeId) {
         // Check if it's a UUID or code
-        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(query.serviceTypeId);
-        
+        const isUUID =
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+            query.serviceTypeId,
+          );
+
         if (isUUID) {
           qb.andWhere('sr.serviceTypeId = :serviceTypeId', {
             serviceTypeId: query.serviceTypeId,
@@ -772,7 +825,7 @@ export class ServiceRequestsService {
       // Search by user email or name
       if (query.search) {
         qb.andWhere(
-          '(u.email ILIKE :search OR u.firstName ILIKE :search OR u.lastName ILIKE :search)',
+          '(u.email ILIKE :search OR u.fullName ILIKE :search)',
           { search: `%${query.search}%` },
         );
       }
@@ -872,27 +925,32 @@ export class ServiceRequestsService {
 
   // Extended Document Workflow Methods
   async getMissingDocuments(id: string, userId: string): Promise<any> {
-    return { 
-      success: true, 
+    return {
+      success: true,
       data: {
         requestId: id,
         missingDocuments: [],
-        totalMissing: 0
-      }
+        totalMissing: 0,
+      },
     };
   }
 
-  async reuploadDocument(id: string, documentId: string, dto: ReuploadDocumentDto, userId: string): Promise<any> {
-    return { 
-      success: true, 
+  async reuploadDocument(
+    id: string,
+    documentId: string,
+    dto: ReuploadDocumentDto,
+    userId: string,
+  ): Promise<any> {
+    return {
+      success: true,
       message: 'Document reupload tracked',
       data: {
         requestId: id,
         documentId,
         reason: dto.reason,
         notes: dto.notes,
-        reuploadedAt: new Date()
-      }
+        reuploadedAt: new Date(),
+      },
     };
   }
 }

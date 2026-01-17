@@ -26,7 +26,7 @@ export class NotificationsController {
 
   // Email tracking pixel endpoint - NO AUTH REQUIRED (must be before other routes)
   @Get('track/:notificationId')
-  @ApiOperation({ summary: 'Track email open' })
+  @ApiOperation({ summary: '[Public] Track email open' })
   async trackEmailOpen(
     @Param('notificationId') notificationId: string,
     @Res() res: any,
@@ -45,10 +45,9 @@ export class NotificationsController {
     res.set({
       'Content-Type': 'image/gif',
       'Content-Length': pixel.length,
-      'Cache-Control':
-        'no-store, no-cache, must-revalidate, proxy-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      Pragma: 'no-cache',
+      Expires: '0',
     });
     return res.send(pixel);
   }
@@ -58,37 +57,34 @@ export class NotificationsController {
   @Get('my')
   @Permissions('notifications:read_own')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'List my notifications' })
+  @ApiOperation({ summary: '[Customer] List my notifications' })
   findMy(@CurrentUser() user: any) {
     return this.notificationsService.findByUser(user.id);
   }
 
   @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Get('unread-count')
   @Permissions('notifications:read_own')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get unread count' })
+  @ApiOperation({ summary: '[Customer] Get unread count' })
   getUnreadCount(@CurrentUser() user: any) {
     return this.notificationsService.getUnreadCount(user.id);
   }
 
   @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Patch(':id/read')
-  @Permissions('notifications:write_own')
+  @Permissions('notifications:update')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Mark as read' })
+  @ApiOperation({ summary: '[Customer] Mark notification as read' })
   markAsRead(@Param('id') id: string, @CurrentUser() user: any) {
     return this.notificationsService.markAsRead(id, user.id);
   }
 
   @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Patch('mark-all-read')
-  @Permissions('notifications:write_own')
+  @Permissions('notifications:update')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Mark all as read' })
+  @ApiOperation({ summary: '[Customer] Mark all notifications as read' })
   markAllAsRead(@CurrentUser() user: any) {
     return this.notificationsService.markAllAsRead(user.id);
   }
@@ -97,7 +93,7 @@ export class NotificationsController {
   @Delete(':id')
   @Permissions('notifications:delete_own')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Delete notification' })
+  @ApiOperation({ summary: '[Customer] Delete notification' })
   remove(@Param('id') id: string, @CurrentUser() user: any) {
     return this.notificationsService.remove(id);
   }
@@ -107,7 +103,7 @@ export class NotificationsController {
   @Post('send')
   @Permissions('notifications:write')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Send notification' })
+  @ApiOperation({ summary: '[Admin] Send notification' })
   send(@Body() dto: SendNotificationDto) {
     return this.notificationsService.send(dto);
   }
@@ -116,7 +112,7 @@ export class NotificationsController {
   @Post('broadcast')
   @Permissions('notifications:broadcast')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Broadcast to all users' })
+  @ApiOperation({ summary: '[Admin] Broadcast to all users' })
   broadcast(@Body() dto: BroadcastNotificationDto) {
     return this.notificationsService.broadcast(dto);
   }
@@ -125,7 +121,7 @@ export class NotificationsController {
   @Post('send-to-role')
   @Permissions('notifications:write')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Send to role' })
+  @ApiOperation({ summary: '[Admin] Send to role' })
   sendToRole(@Body() dto: SendToRoleDto) {
     return this.notificationsService.sendToRole(dto);
   }

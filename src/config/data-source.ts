@@ -15,4 +15,19 @@ export const AppDataSource = new DataSource({
   synchronize: false,
   logging: process.env.TYPEORM_LOGGING === 'true',
   namingStrategy: new SnakeNamingStrategy(),
+  // Connection pool optimization
+  extra: {
+    max: 20, // Maximum pool size
+    min: 5, // Minimum pool size
+    idle: 10000, // Close idle clients after 10 seconds
+    connectionTimeoutMillis: 5000, // 5 second timeout
+    statement_timeout: 30000, // 30 second query timeout
+    query_timeout: 30000,
+  },
+  // Enable query result caching
+  cache: {
+    duration: 60000, // Cache for 1 minute
+    type: 'database',
+    tableName: 'query_result_cache',
+  },
 });

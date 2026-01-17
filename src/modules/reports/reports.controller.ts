@@ -1,8 +1,4 @@
-import {
-  Controller,
-  Get,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ReportsService } from './reports.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -19,7 +15,7 @@ export class ReportsController {
   @Get('reports/dashboard')
   @Permissions('reports:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get dashboard stats' })
+  @ApiOperation({ summary: '[Admin] Get dashboard stats' })
   getDashboard() {
     return this.reportsService.getDashboard();
   }
@@ -27,7 +23,7 @@ export class ReportsController {
   @Get('reports/service-requests')
   @Permissions('reports:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Service request analytics' })
+  @ApiOperation({ summary: '[Admin] Service request analytics' })
   getServiceRequestMetrics() {
     return this.reportsService.getServiceRequestMetrics();
   }
@@ -35,7 +31,7 @@ export class ReportsController {
   @Get('reports/subscriptions')
   @Permissions('reports:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Subscription metrics' })
+  @ApiOperation({ summary: '[Admin] Subscription metrics' })
   getSubscriptionMetrics() {
     return this.reportsService.getSubscriptionMetrics();
   }
@@ -43,7 +39,7 @@ export class ReportsController {
   @Get('reports/revenue')
   @Permissions('reports:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Revenue analytics' })
+  @ApiOperation({ summary: '[Admin] Revenue analytics' })
   getRevenueReports() {
     return this.reportsService.getRevenueReports();
   }
@@ -51,7 +47,7 @@ export class ReportsController {
   @Get('reports/users')
   @Permissions('reports:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'User statistics' })
+  @ApiOperation({ summary: '[Admin] User statistics' })
   getUserStatistics() {
     return this.reportsService.getUserStatistics();
   }
@@ -59,7 +55,7 @@ export class ReportsController {
   @Get('reports/user-activity')
   @Permissions('reports:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'User engagement metrics' })
+  @ApiOperation({ summary: '[Admin] User engagement metrics' })
   getUserActivityMetrics() {
     return this.reportsService.getUserActivityMetrics();
   }
@@ -67,7 +63,7 @@ export class ReportsController {
   @Get('reports/appointments')
   @Permissions('reports:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Appointment analytics' })
+  @ApiOperation({ summary: '[Admin] Appointment analytics' })
   getAppointmentAnalytics() {
     return this.reportsService.getAppointmentAnalytics();
   }
@@ -75,7 +71,7 @@ export class ReportsController {
   @Get('reports/export')
   @Permissions('reports:export')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Export report data' })
+  @ApiOperation({ summary: '[Admin] Export report data' })
   exportReportData() {
     return this.reportsService.exportReportData();
   }
@@ -84,7 +80,7 @@ export class ReportsController {
   @Get('admin/dashboard/stats')
   @Permissions('reports:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get overview stats' })
+  @ApiOperation({ summary: '[Admin] Get overview stats' })
   getAdminDashboardStats() {
     return this.reportsService.getAdminDashboardStats();
   }
@@ -92,7 +88,7 @@ export class ReportsController {
   @Get('admin/dashboard/pending-count')
   @Permissions('reports:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Pending requests count' })
+  @ApiOperation({ summary: '[Admin] Pending requests count' })
   getPendingRequestsCount() {
     return this.reportsService.getPendingRequestsCount();
   }
@@ -100,7 +96,7 @@ export class ReportsController {
   @Get('admin/dashboard/workload')
   @Permissions('reports:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Operator workload distribution' })
+  @ApiOperation({ summary: '[Admin] Operator workload distribution' })
   getOperatorWorkload() {
     return this.reportsService.getOperatorWorkload();
   }

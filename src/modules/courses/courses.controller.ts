@@ -25,19 +25,19 @@ export class CoursesController {
 
   // Public Routes
   @Get()
-  @ApiOperation({ summary: 'List active courses' })
+  @ApiOperation({ summary: '[Public] List active courses' })
   findActive() {
     return this.coursesService.findActive();
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get course details' })
+  @ApiOperation({ summary: '[Public] Get course details' })
   findOne(@Param('id') id: string) {
     return this.coursesService.findOne(id);
   }
 
   @Get(':id/modules')
-  @ApiOperation({ summary: 'Get course modules/lessons' })
+  @ApiOperation({ summary: '[Public] Get course modules/lessons' })
   getCourseModules(@Param('id') id: string) {
     return this.coursesService.getCourseModules(id);
   }
@@ -47,7 +47,7 @@ export class CoursesController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('courses:enroll')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Enroll in course' })
+  @ApiOperation({ summary: '[Customer] Enroll in course' })
   enroll(@Param('id') id: string, @CurrentUser() user: any) {
     return this.coursesService.enroll(id, user.id);
   }
@@ -56,7 +56,7 @@ export class CoursesController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('courses:read_own')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'List my enrollments' })
+  @ApiOperation({ summary: '[Customer] List my enrollments' })
   getMyEnrollments(@CurrentUser() user: any) {
     return this.coursesService.getMyEnrollments(user.id);
   }
@@ -65,7 +65,7 @@ export class CoursesController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('courses:enroll')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Unenroll from course' })
+  @ApiOperation({ summary: '[Customer] Unenroll from course' })
   unenroll(@Param('id') id: string, @CurrentUser() user: any) {
     return this.coursesService.unenroll(id, user.id);
   }
@@ -74,7 +74,7 @@ export class CoursesController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('courses:read_own')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Download certificate' })
+  @ApiOperation({ summary: '[Customer] Download certificate' })
   getCertificate(@Param('id') id: string, @CurrentUser() user: any) {
     return this.coursesService.getCertificate(id, user.id);
   }
@@ -84,7 +84,7 @@ export class CoursesController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('courses:read_own')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get user\'s progress in a course' })
+  @ApiOperation({ summary: '[Customer] Get course progress' })
   getCourseProgress(@Param('id') id: string, @CurrentUser() user: any) {
     return this.coursesService.getCourseProgress(id, user.id);
   }
@@ -93,8 +93,12 @@ export class CoursesController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('courses:enroll')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Mark module/lesson complete' })
-  completeModule(@Param('id') id: string, @Body() dto: { moduleId: string }, @CurrentUser() user: any) {
+  @ApiOperation({ summary: '[Customer] Mark module/lesson complete' })
+  completeModule(
+    @Param('id') id: string,
+    @Body() dto: { moduleId: string },
+    @CurrentUser() user: any,
+  ) {
     return this.coursesService.completeModule(id, dto.moduleId, user.id);
   }
 
@@ -103,7 +107,7 @@ export class CoursesController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('courses:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'List all courses' })
+  @ApiOperation({ summary: '[Admin] List all courses' })
   findAll() {
     return this.coursesService.findAll();
   }
@@ -112,7 +116,7 @@ export class CoursesController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('courses:write')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Create course' })
+  @ApiOperation({ summary: '[Admin] Create course' })
   create(@Body() dto: CreateCourseDto) {
     return this.coursesService.create(dto);
   }
@@ -121,7 +125,7 @@ export class CoursesController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('courses:write')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Update course' })
+  @ApiOperation({ summary: '[Admin] Update course' })
   update(@Param('id') id: string, @Body() dto: UpdateCourseDto) {
     return this.coursesService.update(id, dto);
   }
@@ -130,7 +134,7 @@ export class CoursesController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('courses:delete')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Delete course' })
+  @ApiOperation({ summary: '[Admin] Delete course' })
   remove(@Param('id') id: string) {
     return this.coursesService.remove(id);
   }
@@ -139,7 +143,7 @@ export class CoursesController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('courses:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'List course enrollments' })
+  @ApiOperation({ summary: '[Admin] List course enrollments' })
   getCourseEnrollments(@Param('id') id: string) {
     return this.coursesService.getCourseEnrollments(id);
   }
@@ -148,7 +152,7 @@ export class CoursesController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('courses:write')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Publish course' })
+  @ApiOperation({ summary: '[Admin] Publish course' })
   publish(@Param('id') id: string) {
     return this.coursesService.publish(id);
   }
@@ -157,7 +161,7 @@ export class CoursesController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('courses:write')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Issue certificate' })
+  @ApiOperation({ summary: '[Admin] Issue certificate' })
   issueCertificate(@Param('id') id: string, @Body() dto: any) {
     return this.coursesService.issueCertificate(id, dto);
   }

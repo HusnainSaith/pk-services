@@ -22,12 +22,16 @@ export class Validators {
   }
 
   static sanitizeLog(message: string): string {
-    return message?.replace(/password|token|secret|key/gi, '***').replace(/[\r\n\t]/g, ' ') || '';
+    return (
+      message
+        ?.replace(/password|token|secret|key/gi, '***')
+        .replace(/[\r\n\t]/g, ' ') || ''
+    );
   }
 
   static sanitizeParams(params: Record<string, any>): Record<string, any> {
     if (!params || typeof params !== 'object') return {};
-    
+
     const result = {};
     for (const [key, value] of Object.entries(params)) {
       result[key] = typeof value === 'string' ? this.sanitize(value) : value;
@@ -44,7 +48,9 @@ export class Validators {
   }
 
   static isUUID(id: string): boolean {
-    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id || '');
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      id || '',
+    );
   }
 
   static isPassword(password: string): boolean {
@@ -81,7 +87,9 @@ export class Validators {
     }
     const len = value.trim().length;
     if (len < min || len > max) {
-      throw new BadRequestException(`${field} must be ${min}-${max} characters`);
+      throw new BadRequestException(
+        `${field} must be ${min}-${max} characters`,
+      );
     }
   }
 
@@ -102,7 +110,9 @@ export class Validators {
   static password(value: string): void {
     this.string(value, 'password', 8, 128);
     if (!this.isPassword(value)) {
-      throw new BadRequestException('Password must contain uppercase, lowercase, and number');
+      throw new BadRequestException(
+        'Password must contain uppercase, lowercase, and number',
+      );
     }
   }
 
@@ -136,14 +146,18 @@ export class Validators {
   static enum(value: any, enumObj: any, field: string): void {
     this.required(value, field);
     if (!Object.values(enumObj).includes(value)) {
-      throw new BadRequestException(`${field} must be: ${Object.values(enumObj).join(', ')}`);
+      throw new BadRequestException(
+        `${field} must be: ${Object.values(enumObj).join(', ')}`,
+      );
     }
   }
 
   static array(value: any, field: string, minLength = 0): void {
     this.required(value, field);
     if (!Array.isArray(value) || value.length < minLength) {
-      throw new BadRequestException(`${field} must be an array with at least ${minLength} items`);
+      throw new BadRequestException(
+        `${field} must be an array with at least ${minLength} items`,
+      );
     }
   }
 
@@ -154,8 +168,19 @@ export class Validators {
   static checkSqlInjection(obj: any): void {
     if (!obj || typeof obj !== 'object') return;
 
-    const dangerous = ['$where', '$regex', '$ne', '$gt', '$lt', '$in', '$nin', '$exists', '$or', '$and'];
-    
+    const dangerous = [
+      '$where',
+      '$regex',
+      '$ne',
+      '$gt',
+      '$lt',
+      '$in',
+      '$nin',
+      '$exists',
+      '$or',
+      '$and',
+    ];
+
     for (const [key, value] of Object.entries(obj)) {
       if (dangerous.includes(key)) {
         throw new BadRequestException(`Dangerous operator: ${key}`);

@@ -28,7 +28,9 @@ export interface PerformanceConfig {
   };
 }
 
-export const createPerformanceConfig = (configService: ConfigService): PerformanceConfig => ({
+export const createPerformanceConfig = (
+  configService: ConfigService,
+): PerformanceConfig => ({
   database: {
     connectionPoolSize: configService.get<number>('DB_POOL_SIZE', 10),
     queryTimeout: configService.get<number>('DB_QUERY_TIMEOUT', 30000),
@@ -51,7 +53,9 @@ export const createPerformanceConfig = (configService: ConfigService): Performan
     max: configService.get<number>('RATE_LIMIT_MAX', 100),
   },
   cors: {
-    origin: configService.get<string>('CORS_ORIGINS', 'http://localhost:3001').split(','),
+    origin: configService
+      .get<string>('CORS_ORIGINS', 'http://localhost:3001')
+      .split(','),
     credentials: configService.get<boolean>('CORS_CREDENTIALS', true),
   },
 });

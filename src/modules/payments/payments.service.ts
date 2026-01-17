@@ -35,12 +35,30 @@ export class PaymentsService {
    */
   async findAll(options?: { page?: number; limit?: number }) {
     const { page = 1, limit = 10 } = options || {};
-    const [data, total] = await this.paymentRepository.findAndCount({
-      skip: (page - 1) * limit,
-      take: limit,
-      order: { createdAt: 'DESC' },
-      relations: ['user', 'serviceRequest'],
-    });
+    
+    const qb = this.paymentRepository
+      .createQueryBuilder('payment')
+      .leftJoin('payment.user', 'user')
+      .leftJoin('payment.serviceRequest', 'serviceRequest')
+      .select([
+        'payment.id',
+        'payment.amount',
+        'payment.status',
+        'payment.stripePaymentIntentId',
+        'payment.createdAt',
+        'payment.updatedAt',
+        'user.id',
+        'user.fullName',
+        'user.email',
+        'serviceRequest.id',
+        'serviceRequest.title',
+        'serviceRequest.status',
+      ])
+      .skip((page - 1) * limit)
+      .take(limit)
+      .orderBy('payment.createdAt', 'DESC');
+
+    const [data, total] = await qb.getManyAndCount();
 
     return {
       data,
@@ -54,13 +72,25 @@ export class PaymentsService {
    * Find payments for a user with pagination
    */
   async findByUser(userId: string, page = 1, limit = 10) {
-    const [data, total] = await this.paymentRepository.findAndCount({
-      where: { userId },
-      skip: (page - 1) * limit,
-      take: limit,
-      order: { createdAt: 'DESC' },
-      relations: ['serviceRequest'],
-    });
+    const qb = this.paymentRepository
+      .createQueryBuilder('payment')
+      .leftJoin('payment.serviceRequest', 'serviceRequest')
+      .select([
+        'payment.id',
+        'payment.amount',
+        'payment.status',
+        'payment.stripePaymentIntentId',
+        'payment.createdAt',
+        'serviceRequest.id',
+        'serviceRequest.title',
+        'serviceRequest.status',
+      ])
+      .where('payment.userId = :userId', { userId })
+      .skip((page - 1) * limit)
+      .take(limit)
+      .orderBy('payment.createdAt', 'DESC');
+
+    const [data, total] = await qb.getManyAndCount();
 
     return {
       data,
@@ -108,7 +138,9 @@ export class PaymentsService {
     }
 
     await this.paymentRepository.update(id, updateData);
-    return this.paymentRepository.findOne({ where: { id } }) as Promise<Payment>;
+    return this.paymentRepository.findOne({
+      where: { id },
+    }) as Promise<Payment>;
   }
 
   /**
@@ -199,7 +231,7 @@ export class PaymentsService {
     if (!payment) {
       throw new Error(`Payment ${id} not found`);
     }
-    
+
     if (payment.userId !== userId) {
       throw new Error('Payment not found');
     }
@@ -207,7 +239,7 @@ export class PaymentsService {
     return {
       paymentId: id,
       receiptUrl: `/api/v1/payments/${id}/receipt.pdf`,
-      generatedAt: new Date()
+      generatedAt: new Date(),
     };
   }
 
@@ -219,7 +251,7 @@ export class PaymentsService {
     if (!payment) {
       throw new Error(`Payment ${id} not found`);
     }
-    
+
     if (payment.userId !== userId) {
       throw new Error('Payment not found');
     }
@@ -228,7 +260,7 @@ export class PaymentsService {
       paymentId: id,
       invoiceUrl: `/api/v1/payments/${id}/invoice.pdf`,
       invoiceNumber: `INV-${Date.now()}`,
-      generatedAt: new Date()
+      generatedAt: new Date(),
     };
   }
 
@@ -240,7 +272,7 @@ export class PaymentsService {
     if (!payment) {
       throw new Error(`Payment ${id} not found`);
     }
-    
+
     if (payment.userId !== userId) {
       throw new Error('Payment not found');
     }
@@ -248,7 +280,7 @@ export class PaymentsService {
     return {
       paymentId: id,
       sentAt: new Date(),
-      emailAddress: 'user@example.com'
+      emailAddress: 'user@example.com',
     };
   }
 }

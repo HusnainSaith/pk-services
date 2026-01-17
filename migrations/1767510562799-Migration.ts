@@ -93,12 +93,7 @@ export class Migration1767510562799 implements MigrationInterface {
     await queryRunner.query(
       `CREATE TABLE "blacklisted_tokens" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "token" text NOT NULL, "expires_at" TIMESTAMP NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_8fb1bc7333c3b9f249f9feaa55d" PRIMARY KEY ("id"))`,
     );
-    await queryRunner.query(
-      `ALTER TABLE "user_profiles" ALTER COLUMN "preferred_language" SET NOT NULL`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "user_profiles" ALTER COLUMN "preferred_communication" SET NOT NULL`,
-    );
+    // Skip preferred_language and preferred_communication - removed from user_profiles
     await queryRunner.query(
       `ALTER TABLE "family_members" DROP COLUMN "full_name"`,
     );

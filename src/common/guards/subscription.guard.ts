@@ -1,4 +1,9 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { UserSubscriptionsService } from '../../modules/subscriptions/user-subscriptions.service';
 
@@ -19,10 +24,13 @@ export class SubscriptionGuard implements CanActivate {
     }
 
     // Check if user has active subscription
-    const activeSubscription = await this.userSubscriptionsService.findActiveByUser(user.id);
-    
+    const activeSubscription =
+      await this.userSubscriptionsService.findActiveByUser(user.id);
+
     if (!activeSubscription) {
-      throw new ForbiddenException('Active subscription required to create service requests');
+      throw new ForbiddenException(
+        'Active subscription required to create service requests',
+      );
     }
 
     return true;

@@ -22,7 +22,10 @@ export class CreateAppointmentDto {
   @IsUUID(4, { message: 'Operator ID must be a valid UUID' })
   operatorId?: string;
 
-  @ApiProperty({ description: 'Appointment title', example: 'ISEE Consultation' })
+  @ApiProperty({
+    description: 'Appointment title',
+    example: 'ISEE Consultation',
+  })
   @IsString({ message: 'Title must be a string' })
   @MinLength(3, { message: 'Title must be at least 3 characters long' })
   @MaxLength(255, { message: 'Title cannot exceed 255 characters' })
@@ -34,9 +37,9 @@ export class CreateAppointmentDto {
   @MaxLength(1000, { message: 'Description cannot exceed 1000 characters' })
   description?: string;
 
-  @ApiProperty({ 
-    description: 'Appointment date and time', 
-    example: '2024-01-15T10:00:00.000Z' 
+  @ApiProperty({
+    description: 'Appointment date and time',
+    example: '2024-01-15T10:00:00.000Z',
   })
   @IsDateString(
     {},
@@ -44,10 +47,10 @@ export class CreateAppointmentDto {
   )
   appointmentDate: string;
 
-  @ApiPropertyOptional({ 
-    description: 'Duration in minutes', 
+  @ApiPropertyOptional({
+    description: 'Duration in minutes',
     default: 60,
-    enum: [30, 60, 90]
+    enum: [30, 60, 90],
   })
   @IsOptional()
   @IsNumber({}, { message: 'Duration must be a number' })

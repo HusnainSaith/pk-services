@@ -54,25 +54,14 @@ export class InitialSetup1704300000000 implements MigrationInterface {
     // USERS & PROFILES
     // ========================================
 
-    // Users table
+    // Users table (Core authentication fields only)
     await queryRunner.query(`
             CREATE TABLE "users" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "email" character varying NOT NULL,
                 "password" character varying NOT NULL,
                 "full_name" character varying NOT NULL,
-                "fiscal_code" character varying(16),
                 "phone" character varying(20),
-                "address" text,
-                "city" character varying(100),
-                "postal_code" character varying(10),
-                "province" character varying(2),
-                "birth_date" date,
-                "birth_place" character varying(100),
-                "gdpr_consent" boolean NOT NULL DEFAULT false,
-                "gdpr_consent_date" TIMESTAMP,
-                "privacy_consent" boolean NOT NULL DEFAULT false,
-                "privacy_consent_date" TIMESTAMP,
                 "is_active" boolean NOT NULL DEFAULT true,
                 "role_id" uuid,
                 "created_at" TIMESTAMP NOT NULL DEFAULT now(),
@@ -93,32 +82,24 @@ export class InitialSetup1704300000000 implements MigrationInterface {
             )
         `);
 
-    // User Profiles (Extended user information)
+    // User Profiles (Extended user information - Italian-focused)
     await queryRunner.query(`
             CREATE TABLE "user_profiles" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "user_id" uuid NOT NULL,
                 "avatar_url" character varying(500),
                 "bio" text,
-                "date_of_birth" date,
-                "gender" character varying(20),
-                "nationality" character varying(100),
-                "id_card_number" character varying(50),
-                "id_card_expiry" date,
-                "passport_number" character varying(50),
-                "passport_expiry" date,
-                "marital_status" character varying(20),
-                "occupation" character varying(100),
-                "employer" character varying(200),
-                "monthly_income" numeric(10,2),
-                "emergency_contact_name" character varying(255),
-                "emergency_contact_phone" character varying(20),
-                "emergency_contact_relationship" character varying(50),
-                "preferred_language" character varying(10) DEFAULT 'it',
-                "preferred_communication" character varying(20) DEFAULT 'email',
-                "notifications_enabled" boolean NOT NULL DEFAULT true,
-                "email_notifications" boolean NOT NULL DEFAULT true,
-                "sms_notifications" boolean NOT NULL DEFAULT false,
+                "fiscal_code" character varying(16),
+                "address" text,
+                "city" character varying(100),
+                "postal_code" character varying(10),
+                "province" character varying(2),
+                "birth_date" date,
+                "birth_place" character varying(100),
+                "gdpr_consent" boolean NOT NULL DEFAULT false,
+                "gdpr_consent_date" TIMESTAMP,
+                "privacy_consent" boolean NOT NULL DEFAULT false,
+                "privacy_consent_date" TIMESTAMP,
                 "created_at" TIMESTAMP NOT NULL DEFAULT now(),
                 "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
                 CONSTRAINT "UQ_user_profiles_user_id" UNIQUE ("user_id"),

@@ -21,16 +21,17 @@ export class AdminService {
     today.setHours(0, 0, 0, 0);
 
     // Get counts from database
-    const [totalUsers, totalServiceRequests, pendingRequests, completedToday] = await Promise.all([
-      this.userRepository.count(),
-      this.serviceRequestRepository.count(),
-      this.serviceRequestRepository.count({ where: { status: 'submitted' } }),
-      this.serviceRequestRepository.count({
-        where: {
-          status: 'completed',
-        },
-      }),
-    ]);
+    const [totalUsers, totalServiceRequests, pendingRequests, completedToday] =
+      await Promise.all([
+        this.userRepository.count(),
+        this.serviceRequestRepository.count(),
+        this.serviceRequestRepository.count({ where: { status: 'submitted' } }),
+        this.serviceRequestRepository.count({
+          where: {
+            status: 'completed',
+          },
+        }),
+      ]);
 
     // Get revenue data
     const revenueToday = await this.paymentRepository
@@ -43,15 +44,21 @@ export class AdminService {
     const revenueMonth = await this.paymentRepository
       .createQueryBuilder('payment')
       .select('COALESCE(SUM(payment.amount), 0)', 'total')
-      .where('EXTRACT(YEAR FROM payment.createdAt) = EXTRACT(YEAR FROM CURRENT_DATE)')
-      .andWhere('EXTRACT(MONTH FROM payment.createdAt) = EXTRACT(MONTH FROM CURRENT_DATE)')
+      .where(
+        'EXTRACT(YEAR FROM payment.createdAt) = EXTRACT(YEAR FROM CURRENT_DATE)',
+      )
+      .andWhere(
+        'EXTRACT(MONTH FROM payment.createdAt) = EXTRACT(MONTH FROM CURRENT_DATE)',
+      )
       .andWhere('payment.status = :status', { status: 'completed' })
       .getRawOne();
 
     const revenueYear = await this.paymentRepository
       .createQueryBuilder('payment')
       .select('COALESCE(SUM(payment.amount), 0)', 'total')
-      .where('EXTRACT(YEAR FROM payment.createdAt) = EXTRACT(YEAR FROM CURRENT_DATE)')
+      .where(
+        'EXTRACT(YEAR FROM payment.createdAt) = EXTRACT(YEAR FROM CURRENT_DATE)',
+      )
       .andWhere('payment.status = :status', { status: 'completed' })
       .getRawOne();
 
@@ -99,7 +106,9 @@ export class AdminService {
       .addSelect('COUNT(sr.id)', 'requestCount')
       .addSelect('u.fullName', 'operatorName')
       .leftJoin(User, 'u', 'u.id = sr.assignedOperatorId')
-      .where('sr.status IN (:...statuses)', { statuses: ['submitted', 'in_review'] })
+      .where('sr.status IN (:...statuses)', {
+        statuses: ['submitted', 'in_review'],
+      })
       .groupBy('sr.assignedOperatorId')
       .addGroupBy('u.fullName')
       .orderBy('COUNT(sr.id)', 'DESC')

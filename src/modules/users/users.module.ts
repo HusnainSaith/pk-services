@@ -29,7 +29,7 @@ import { AwsModule } from '../aws/aws.module';
     AwsModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '1h' },
+      signOptions: { expiresIn: '7h' },
     }),
   ],
   controllers: [UsersController, FamilyMembersController],

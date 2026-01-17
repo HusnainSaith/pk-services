@@ -1,8 +1,4 @@
-import {
-  Controller,
-  Get,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
@@ -18,7 +14,7 @@ export class AdminController {
   @Get('dashboard/stats')
   @Permissions('admin:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get overview stats' })
+  @ApiOperation({ summary: '[Admin] Get overview stats' })
   getDashboardStats() {
     return this.adminService.getDashboardStats();
   }
@@ -26,7 +22,7 @@ export class AdminController {
   @Get('dashboard/pending-count')
   @Permissions('admin:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Pending requests count' })
+  @ApiOperation({ summary: '[Admin] Pending requests count' })
   getPendingCount() {
     return this.adminService.getPendingCount();
   }
@@ -34,7 +30,7 @@ export class AdminController {
   @Get('dashboard/workload')
   @Permissions('admin:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Operator workload distribution' })
+  @ApiOperation({ summary: '[Admin] Operator workload distribution' })
   getWorkloadDistribution() {
     return this.adminService.getWorkloadDistribution();
   }

@@ -17,10 +17,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
-import {
-  RefreshTokenDto,
-  PasswordResetDto,
-} from './dto/refresh-token.dto';
+import { RefreshTokenDto, PasswordResetDto } from './dto/refresh-token.dto';
 import { User } from '../users/entities/user.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { BlacklistedToken } from './entities/blacklisted-token.entity';
@@ -64,8 +61,10 @@ export class AuthService {
       email: ValidationUtil.sanitizeString(dto.email.toLowerCase()),
       password: dto.password,
       fullName: `${ValidationUtil.sanitizeString(dto.firstName)} ${ValidationUtil.sanitizeString(dto.lastName)}`,
-      fiscalCode: dto.fiscalCode,
       phone: dto.phone,
+      roleId: customerRole.id,
+      // Profile fields
+      fiscalCode: dto.fiscalCode,
       birthDate: dto.dateOfBirth,
       address: dto.address,
       city: dto.city,
@@ -73,7 +72,6 @@ export class AuthService {
       province: dto.province,
       gdprConsent: dto.gdprConsent,
       privacyConsent: dto.marketingConsent,
-      roleId: customerRole.id, // Assign default customer role
     });
 
     SafeLogger.log(`User registered successfully: ${dto.email}`, 'AuthService');
@@ -121,25 +119,14 @@ export class AuthService {
     // Revoke all existing refresh tokens for this user
     await this.refreshTokenRepository.update(
       { userId: user.id, isRevoked: false },
-      { isRevoked: true }
+      { isRevoked: true },
     );
 
     const userSafe = {
       id: user.id,
       email: user.email,
       fullName: user.fullName,
-      fiscalCode: user.fiscalCode,
       phone: user.phone,
-      address: user.address,
-      city: user.city,
-      postalCode: user.postalCode,
-      province: user.province,
-      birthDate: user.birthDate,
-      birthPlace: user.birthPlace,
-      gdprConsent: user.gdprConsent,
-      gdprConsentDate: user.gdprConsentDate,
-      privacyConsent: user.privacyConsent,
-      privacyConsentDate: user.privacyConsentDate,
       isActive: user.isActive,
       roleId: user.roleId,
       createdAt: user.createdAt,
@@ -149,7 +136,7 @@ export class AuthService {
     const payload = { sub: user.id, email: user.email };
 
     const accessToken = await this.jwtService.signAsync(payload, {
-      expiresIn: '15m',
+      expiresIn: '7h',
     });
     const refreshToken = await this.generateRefreshToken(user.id);
 
@@ -180,7 +167,7 @@ export class AuthService {
     // Revoke all existing refresh tokens for this user to force re-login on other devices
     await this.refreshTokenRepository.update(
       { userId: refreshToken.user.id, isRevoked: false },
-      { isRevoked: true }
+      { isRevoked: true },
     );
 
     const payload = {
@@ -188,11 +175,13 @@ export class AuthService {
       email: refreshToken.user.email,
     };
     const accessToken = await this.jwtService.signAsync(payload, {
-      expiresIn: '15m',
+      expiresIn: '7h',
     });
 
     // Generate new refresh token
-    const newRefreshToken = await this.generateRefreshToken(refreshToken.user.id);
+    const newRefreshToken = await this.generateRefreshToken(
+      refreshToken.user.id,
+    );
 
     SafeLogger.log(
       `Token refreshed for user: ${refreshToken.user.email}`,
@@ -310,12 +299,16 @@ export class AuthService {
     }
 
     // Get user with password for comparison
-    const userWithPassword = await this.usersService.findByIdWithPassword(userId);
+    const userWithPassword =
+      await this.usersService.findByIdWithPassword(userId);
     if (!userWithPassword) {
       throw new NotFoundException('User not found');
     }
 
-    const isMatch = await bcrypt.compare(dto.currentPassword, userWithPassword.password);
+    const isMatch = await bcrypt.compare(
+      dto.currentPassword,
+      userWithPassword.password,
+    );
     if (!isMatch) {
       throw new UnauthorizedException('Current password is incorrect');
     }
@@ -329,7 +322,9 @@ export class AuthService {
     };
   }
 
-  async getMe(userId: string): Promise<{ success: boolean; message: string; data: any }> {
+  async getMe(
+    userId: string,
+  ): Promise<{ success: boolean; message: string; data: any }> {
     const user = await this.usersService.findOne(userId);
     const { ...userWithoutPassword } = user as any;
     return {
@@ -378,12 +373,12 @@ export class AuthService {
       const decoded = this.jwtService.decode(token) as any;
       if (decoded && decoded.exp) {
         const expiresAt = new Date(decoded.exp * 1000);
-        
+
         const blacklistedToken = this.blacklistedTokenRepository.create({
           token,
           expiresAt,
         });
-        
+
         await this.blacklistedTokenRepository.save(blacklistedToken);
       }
     } catch (error) {

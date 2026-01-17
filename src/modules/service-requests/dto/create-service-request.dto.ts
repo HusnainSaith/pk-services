@@ -10,13 +10,15 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateServiceRequestDto {
-  @ApiProperty({ description: 'User ID' })
+  @ApiPropertyOptional({ description: 'User ID (auto-populated from auth)' })
+  @IsOptional()
   @IsUUID(4, { message: 'User ID must be a valid UUID' })
-  userId: string;
+  userId?: string;
 
-  @ApiProperty({ description: 'Service type ID' })
-  @IsUUID(4, { message: 'Service type ID must be a valid UUID' })
-  serviceTypeId: string;
+  @ApiPropertyOptional({ description: 'Service type ID or code (can use query param instead)' })
+  @IsOptional()
+  @IsString()
+  serviceTypeId?: string;
 
   @ApiPropertyOptional({
     description: 'Request status',

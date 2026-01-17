@@ -44,7 +44,8 @@ export class AdminDashboardService {
 
     // Set default date range to last 30 days
     const end = endDate || new Date();
-    const start = startDate || new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const start =
+      startDate || new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     return {
       success: true,
@@ -95,7 +96,10 @@ export class AdminDashboardService {
       .leftJoinAndSelect('sr.serviceType', 'st')
       .select('st.code', 'code')
       .addSelect('COUNT(sr.id)', 'count')
-      .where('sr.createdAt BETWEEN :start AND :end', { start: startDate, end: endDate })
+      .where('sr.createdAt BETWEEN :start AND :end', {
+        start: startDate,
+        end: endDate,
+      })
       .groupBy('st.code')
       .getRawMany();
 
@@ -126,14 +130,19 @@ export class AdminDashboardService {
         missingDocuments: missingDocs,
       },
       byService,
-      oldestPending: oldestPending ? {
-        id: oldestPending.id,
-        serviceType: oldestPending.serviceType?.name,
-        userId: oldestPending.user?.id,
-        status: oldestPending.status,
-        createdAt: oldestPending.createdAt,
-        daysOpen: Math.floor((new Date().getTime() - oldestPending.createdAt.getTime()) / (1000 * 60 * 60 * 24)),
-      } : null,
+      oldestPending: oldestPending
+        ? {
+            id: oldestPending.id,
+            serviceType: oldestPending.serviceType?.name,
+            userId: oldestPending.user?.id,
+            status: oldestPending.status,
+            createdAt: oldestPending.createdAt,
+            daysOpen: Math.floor(
+              (new Date().getTime() - oldestPending.createdAt.getTime()) /
+                (1000 * 60 * 60 * 24),
+            ),
+          }
+        : null,
     };
   }
 
@@ -195,7 +204,8 @@ export class AdminDashboardService {
       },
     });
 
-    const churnRate = activeCount > 0 ? ((churned / activeCount) * 100).toFixed(2) : '0';
+    const churnRate =
+      activeCount > 0 ? ((churned / activeCount) * 100).toFixed(2) : '0';
 
     return {
       total: activeCount,
@@ -223,32 +233,33 @@ export class AdminDashboardService {
     const monthEnd = new Date(today);
     monthEnd.setMonth(monthEnd.getMonth() + 1);
 
-    const [todayCount, confirmedCount, pendingCount, nextAppt] = await Promise.all([
-      this.appointmentRepository.count({
-        where: {
-          appointmentDate: Between(today, tomorrow),
-        },
-      }),
-      this.appointmentRepository.count({
-        where: {
-          status: 'CONFIRMED',
-          appointmentDate: Between(today, monthEnd),
-        },
-      }),
-      this.appointmentRepository.count({
-        where: {
-          status: In(['BOOKED', 'PENDING']),
-          appointmentDate: Between(today, monthEnd),
-        },
-      }),
-      this.appointmentRepository.findOne({
-        where: {
-          appointmentDate: MoreThan(today),
-        },
-        order: { appointmentDate: 'ASC' },
-        relations: ['user'],
-      }),
-    ]);
+    const [todayCount, confirmedCount, pendingCount, nextAppt] =
+      await Promise.all([
+        this.appointmentRepository.count({
+          where: {
+            appointmentDate: Between(today, tomorrow),
+          },
+        }),
+        this.appointmentRepository.count({
+          where: {
+            status: 'CONFIRMED',
+            appointmentDate: Between(today, monthEnd),
+          },
+        }),
+        this.appointmentRepository.count({
+          where: {
+            status: In(['BOOKED', 'PENDING']),
+            appointmentDate: Between(today, monthEnd),
+          },
+        }),
+        this.appointmentRepository.findOne({
+          where: {
+            appointmentDate: MoreThan(today),
+          },
+          order: { appointmentDate: 'ASC' },
+          relations: ['user'],
+        }),
+      ]);
 
     // Count for week
     const weekCount = await this.appointmentRepository.count({
@@ -263,12 +274,14 @@ export class AdminDashboardService {
       thisMonth: confirmedCount + pendingCount,
       confirmed: confirmedCount,
       pending: pendingCount,
-      nextAppointment: nextAppt ? {
-        id: nextAppt.id,
-        userName: nextAppt.user?.fullName,
-        date: nextAppt.appointmentDate,
-        status: nextAppt.status,
-      } : null,
+      nextAppointment: nextAppt
+        ? {
+            id: nextAppt.id,
+            userName: nextAppt.user?.fullName,
+            date: nextAppt.appointmentDate,
+            status: nextAppt.status,
+          }
+        : null,
     };
   }
 
@@ -288,14 +301,21 @@ export class AdminDashboardService {
       .addGroupBy('op.fullName')
       .getRawMany();
 
-    const totalLoad = operatorWorkload.reduce((sum, op) => sum + parseInt(op.count), 0);
-    const avgLoad = operatorWorkload.length > 0 ? (totalLoad / operatorWorkload.length).toFixed(2) : '0';
+    const totalLoad = operatorWorkload.reduce(
+      (sum, op) => sum + parseInt(op.count),
+      0,
+    );
+    const avgLoad =
+      operatorWorkload.length > 0
+        ? (totalLoad / operatorWorkload.length).toFixed(2)
+        : '0';
 
-    const busiest = operatorWorkload.length > 0
-      ? operatorWorkload.reduce((prev, current) => 
-          parseInt(current.count) > parseInt(prev.count) ? current : prev
-        )
-      : null;
+    const busiest =
+      operatorWorkload.length > 0
+        ? operatorWorkload.reduce((prev, current) =>
+            parseInt(current.count) > parseInt(prev.count) ? current : prev,
+          )
+        : null;
 
     return {
       operators: operatorWorkload.map((op) => ({
@@ -304,11 +324,13 @@ export class AdminDashboardService {
         activeRequests: parseInt(op.count),
       })),
       averageLoadPerOperator: parseFloat(avgLoad as any),
-      busiest: busiest ? {
-        id: busiest.operatorId,
-        name: busiest.operatorName,
-        activeRequests: parseInt(busiest.count),
-      } : null,
+      busiest: busiest
+        ? {
+            id: busiest.operatorId,
+            name: busiest.operatorName,
+            activeRequests: parseInt(busiest.count),
+          }
+        : null,
       avgCompletionTime: await this.calculateAvgCompletionTime(),
     };
   }
@@ -316,13 +338,19 @@ export class AdminDashboardService {
   /**
    * Get revenue metrics
    */
-  private async getRevenueMetrics(startDate: Date, endDate: Date): Promise<any> {
+  private async getRevenueMetrics(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<any> {
     // Total revenue
     const totalRevenueData = await this.paymentRepository
       .createQueryBuilder('p')
       .select('COALESCE(SUM(p.amount), 0)', 'total')
       .where('p.status = :status', { status: 'completed' })
-      .andWhere('p.createdAt BETWEEN :start AND :end', { start: startDate, end: endDate })
+      .andWhere('p.createdAt BETWEEN :start AND :end', {
+        start: startDate,
+        end: endDate,
+      })
       .getRawOne();
 
     // Count transactions
@@ -342,7 +370,10 @@ export class AdminDashboardService {
     ]);
 
     const totalTransactions = successCount + failureCount;
-    const successRate = totalTransactions > 0 ? ((successCount / totalTransactions) * 100).toFixed(2) : '0';
+    const successRate =
+      totalTransactions > 0
+        ? ((successCount / totalTransactions) * 100).toFixed(2)
+        : '0';
 
     // Refunds
     const refundCount = await this.paymentRepository.count({
@@ -353,7 +384,8 @@ export class AdminDashboardService {
     });
 
     const totalRevenue = parseFloat(totalRevenueData?.total || 0);
-    const avgOrderValue = successCount > 0 ? (totalRevenue / successCount).toFixed(2) : '0';
+    const avgOrderValue =
+      successCount > 0 ? (totalRevenue / successCount).toFixed(2) : '0';
 
     return {
       totalRevenue,
@@ -399,7 +431,8 @@ export class AdminDashboardService {
       usersByRole[item.roleName] = parseInt(item.count) || 0;
     });
 
-    const retentionRate = totalUsers > 0 ? ((activeUsers / totalUsers) * 100).toFixed(2) : '0';
+    const retentionRate =
+      totalUsers > 0 ? ((activeUsers / totalUsers) * 100).toFixed(2) : '0';
 
     return {
       totalUsers,
@@ -424,8 +457,14 @@ export class AdminDashboardService {
       .leftJoinAndSelect('sr.serviceType', 'st')
       .select('st.code', 'code')
       .addSelect('COUNT(sr.id)', 'total')
-      .addSelect('SUM(CASE WHEN sr.status = :completed THEN 1 ELSE 0 END)', 'completed')
-      .addSelect('SUM(CASE WHEN sr.status IN (:pending) THEN 1 ELSE 0 END)', 'pending')
+      .addSelect(
+        'SUM(CASE WHEN sr.status = :completed THEN 1 ELSE 0 END)',
+        'completed',
+      )
+      .addSelect(
+        'SUM(CASE WHEN sr.status IN (:pending) THEN 1 ELSE 0 END)',
+        'pending',
+      )
       .where('1=1')
       .setParameters({
         completed: 'completed',
@@ -454,8 +493,14 @@ export class AdminDashboardService {
       where: { status: 'rejected' },
     });
 
-    const completionRate = totalRequests > 0 ? ((completedRequests / totalRequests) * 100).toFixed(2) : '0';
-    const rejectionRate = totalRequests > 0 ? ((rejectedRequests / totalRequests) * 100).toFixed(2) : '0';
+    const completionRate =
+      totalRequests > 0
+        ? ((completedRequests / totalRequests) * 100).toFixed(2)
+        : '0';
+    const rejectionRate =
+      totalRequests > 0
+        ? ((rejectedRequests / totalRequests) * 100).toFixed(2)
+        : '0';
 
     return {
       success: true,
@@ -486,7 +531,9 @@ export class AdminDashboardService {
     monthStart.setDate(1);
 
     const quarterStart = new Date();
-    quarterStart.setMonth(quarterStart.getMonth() - (quarterStart.getMonth() % 3));
+    quarterStart.setMonth(
+      quarterStart.getMonth() - (quarterStart.getMonth() % 3),
+    );
     quarterStart.setDate(1);
 
     const yearStart = new Date(now.getFullYear(), 0, 1);
@@ -532,7 +579,10 @@ export class AdminDashboardService {
       .leftJoinAndSelect('us.plan', 'p')
       .select('p.name', 'planName')
       .addSelect('COUNT(us.id)', 'count')
-      .addSelect('COALESCE(SUM(CASE WHEN us.billingCycle = :monthly THEN p.priceMonthly ELSE p.priceAnnual END), 0)', 'revenue')
+      .addSelect(
+        'COALESCE(SUM(CASE WHEN us.billingCycle = :monthly THEN p.priceMonthly ELSE p.priceAnnual END), 0)',
+        'revenue',
+      )
       .where('us.status = :status', { status: 'active' })
       .setParameter('monthly', 'monthly')
       .setParameter('status', 'active')
@@ -583,7 +633,8 @@ export class AdminDashboardService {
       this.appointmentRepository.count({ where: { status: 'NO_SHOW' } }),
     ]);
 
-    const completionRate = total > 0 ? ((completed / total) * 100).toFixed(2) : '0';
+    const completionRate =
+      total > 0 ? ((completed / total) * 100).toFixed(2) : '0';
 
     return {
       success: true,
@@ -657,7 +708,9 @@ export class AdminDashboardService {
     return `${days} days`;
   }
 
-  private async calculateChurnRate(period: 'monthly' | 'quarterly' | 'annual'): Promise<string> {
+  private async calculateChurnRate(
+    period: 'monthly' | 'quarterly' | 'annual',
+  ): Promise<string> {
     const now = new Date();
     const startDate = new Date();
 
@@ -683,7 +736,8 @@ export class AdminDashboardService {
       },
     });
 
-    const rate = activeAtStart > 0 ? ((churned / activeAtStart) * 100).toFixed(2) : '0';
+    const rate =
+      activeAtStart > 0 ? ((churned / activeAtStart) * 100).toFixed(2) : '0';
     return `${rate}%`;
   }
 

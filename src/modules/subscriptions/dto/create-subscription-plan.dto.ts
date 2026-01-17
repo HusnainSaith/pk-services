@@ -1,81 +1,123 @@
-import { IsString, IsNumber, IsOptional } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsBoolean,
+  IsObject,
+  IsArray,
+  Min,
+  MaxLength,
+  IsNotEmpty,
+  ValidateNested,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
+/**
+ * DTO for creating a new subscription plan
+ */
 export class CreateSubscriptionPlanDto {
-  @ApiProperty()
+  @ApiProperty({
+    description: 'Plan name (e.g., Basic, Professional, Premium)',
+    example: 'Professional',
+  })
   @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
   name: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    description: 'Plan description',
+    example: 'Perfect for small businesses and professionals',
+    required: false,
+  })
   @IsString()
-  description: string;
-
-  @ApiProperty()
-  @IsNumber()
-  price: number;
-
-  @ApiProperty()
-  @IsString()
-  interval: string; // 'month' | 'year'
-
-  @ApiProperty({ required: false })
   @IsOptional()
-  @IsString()
-  stripePriceId?: string;
-}
-
-export class UpdateSubscriptionPlanDto {
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsString()
-  name?: string;
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsString()
+  @MaxLength(500)
   description?: string;
 
-  @ApiProperty({ required: false })
-  @IsOptional()
+  @ApiProperty({
+    description: 'Monthly price in EUR',
+    example: 29.99,
+    required: false,
+  })
   @IsNumber()
-  price?: number;
-}
-
-export class CreateCheckoutDto {
-  @ApiProperty()
-  @IsString()
-  planId: string;
-
-  @ApiProperty({ required: false })
   @IsOptional()
-  @IsString()
-  successUrl?: string;
+  @Min(0)
+  priceMonthly?: number;
 
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsString()
-  cancelUrl?: string;
-}
-
-export class UpgradeSubscriptionDto {
-  @ApiProperty()
-  @IsString()
-  newPlanId: string;
-}
-
-export class UpdateSubscriptionStatusDto {
-  @ApiProperty({ enum: ['active', 'cancelled', 'past_due', 'unpaid'] })
-  @IsString()
-  status: string;
-}
-
-export class ProcessRefundDto {
-  @ApiProperty()
+  @ApiProperty({
+    description: 'Annual price in EUR (typically discounted)',
+    example: 299.99,
+    required: false,
+  })
   @IsNumber()
-  amount: number;
-
-  @ApiProperty({ required: false })
   @IsOptional()
+  @Min(0)
+  priceAnnual?: number;
+
+  @ApiProperty({
+    description: 'Plan features list',
+    example: [
+      'Unlimited service requests',
+      'Priority support',
+      'Advanced analytics',
+      'Custom reports',
+    ],
+    required: false,
+    type: [String],
+  })
+  @IsArray()
+  @IsOptional()
+  @IsString({ each: true })
+  features?: string[];
+
+  @ApiProperty({
+    description: 'Service usage limits',
+    example: {
+      serviceRequests: 10,
+      documentUploads: 50,
+      appointments: 5,
+      familyMembers: 8,
+    },
+    required: false,
+  })
+  @IsObject()
+  @IsOptional()
+  serviceLimits?: {
+    serviceRequests?: number;
+    documentUploads?: number;
+    appointments?: number;
+    familyMembers?: number;
+    [key: string]: any;
+  };
+
+  @ApiProperty({
+    description:
+      'Whether the plan is active and available for new subscriptions',
+    example: true,
+    required: false,
+    default: true,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
+
+  @ApiProperty({
+    description: 'Stripe Price ID for monthly billing',
+    example: 'price_1234567890abcdef',
+    required: false,
+  })
   @IsString()
-  reason?: string;
+  @IsOptional()
+  stripePriceIdMonthly?: string;
+
+  @ApiProperty({
+    description: 'Stripe Price ID for annual billing',
+    example: 'price_0987654321fedcba',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  stripePriceIdAnnual?: string;
 }

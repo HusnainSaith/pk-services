@@ -203,7 +203,7 @@ export async function seedPermissions(dataSource: DataSource) {
         // Service Requests (Own Only)
         {
           resource: 'service-requests',
-          actions: ['create', 'read', 'update'],
+          actions: ['create', 'read', 'update', 'submit', 'cancel'],
           description: 'Own service requests',
         },
         {

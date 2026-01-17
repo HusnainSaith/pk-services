@@ -38,7 +38,9 @@ export class AssignOperatorDto {
 }
 
 export class UpdateStatusDto {
-  @ApiProperty({ enum: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'] })
+  @ApiProperty({
+    enum: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'],
+  })
   @IsString()
   status: string;
 

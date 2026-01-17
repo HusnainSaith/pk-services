@@ -8,11 +8,7 @@ import { SharedModule } from '../shared/shared.module';
 import { GuardsModule } from '../../common/modules/guards.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Role, User]),
-    SharedModule,
-    GuardsModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Role, User]), SharedModule, GuardsModule],
   controllers: [RolesController],
   providers: [RolesService],
   exports: [RolesService, TypeOrmModule],

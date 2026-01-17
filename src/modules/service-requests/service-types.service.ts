@@ -15,14 +15,14 @@ export class ServiceTypesService {
   async findActive(): Promise<any> {
     const serviceTypes = await this.serviceTypeRepository.find({
       where: { isActive: true },
-      order: { name: 'ASC' }
+      order: { name: 'ASC' },
     });
     return { success: true, data: serviceTypes };
   }
 
   async findOne(id: string): Promise<any> {
     const serviceType = await this.serviceTypeRepository.findOne({
-      where: { id }
+      where: { id },
     });
     if (!serviceType) {
       return { success: false, message: 'Service type not found' };
@@ -33,7 +33,7 @@ export class ServiceTypesService {
   async getSchema(id: string): Promise<any> {
     const serviceType = await this.serviceTypeRepository.findOne({
       where: { id },
-      select: ['id', 'name', 'formSchema']
+      select: ['id', 'name', 'formSchema'],
     });
     if (!serviceType) {
       return { success: false, message: 'Service type not found' };
@@ -65,7 +65,9 @@ export class ServiceTypesService {
   }
 
   async activate(id: string): Promise<any> {
-    const result = await this.serviceTypeRepository.update(id, { isActive: true });
+    const result = await this.serviceTypeRepository.update(id, {
+      isActive: true,
+    });
     if (result.affected === 0) {
       return { success: false, message: 'Service type not found' };
     }
@@ -76,9 +78,9 @@ export class ServiceTypesService {
   async getRequiredDocuments(id: string): Promise<any> {
     const serviceType = await this.serviceTypeRepository.findOne({
       where: { id },
-      select: ['id', 'name', 'requiredDocuments']
+      select: ['id', 'name', 'requiredDocuments'],
     });
-    
+
     if (!serviceType) {
       return { success: false, message: 'Service type not found' };
     }
@@ -88,8 +90,8 @@ export class ServiceTypesService {
       data: {
         serviceTypeId: id,
         serviceName: serviceType.name,
-        requiredDocuments: serviceType.requiredDocuments || []
-      }
+        requiredDocuments: serviceType.requiredDocuments || [],
+      },
     };
   }
 
@@ -100,8 +102,8 @@ export class ServiceTypesService {
       data: {
         serviceTypeId: id,
         schema,
-        updatedAt: new Date()
-      }
+        updatedAt: new Date(),
+      },
     };
   }
 }

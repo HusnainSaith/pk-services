@@ -27,7 +27,7 @@ export class AwsS3Controller {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('admin:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get user folder structure' })
+  @ApiOperation({ summary: '[Admin] Get user folder structure' })
   @ApiParam({ name: 'userId', description: 'User ID' })
   getUserFolderStructure(@Param('userId') userId: string) {
     const folderPaths = this.awsS3FolderService.getUserFolderPaths(userId);
@@ -44,7 +44,7 @@ export class AwsS3Controller {
    * Public endpoint to retrieve service types for upload organization
    */
   @Get('service-types')
-  @ApiOperation({ summary: 'Get available service types' })
+  @ApiOperation({ summary: '[Public] Get available service types' })
   getServiceTypes() {
     const serviceTypes = this.awsS3FolderService.getAvailableServiceTypes();
     return {

@@ -16,7 +16,7 @@ import { ServiceType } from '../service-requests/entities/service-type.entity';
 const APPOINTMENT_DURATIONS = [30, 60, 90];
 const APPOINTMENT_STATUSES = [
   'SCHEDULED',
-  'CONFIRMED', 
+  'CONFIRMED',
   'IN_PROGRESS',
   'COMPLETED',
   'CANCELLED',
@@ -26,7 +26,7 @@ const APPOINTMENT_STATUSES = [
 
 const BUSINESS_HOURS = {
   start: 9, // 9 AM
-  end: 17,  // 5 PM
+  end: 17, // 5 PM
   slotInterval: 30, // 30 minutes
 };
 
@@ -60,7 +60,7 @@ export class AppointmentsService {
     // Validate appointment date
     const appointmentDate = new Date(dto.appointmentDate);
     const now = new Date();
-    
+
     if (appointmentDate <= now) {
       throw new BadRequestException('Appointment date must be in the future');
     }
@@ -69,7 +69,7 @@ export class AppointmentsService {
     const hour = appointmentDate.getHours();
     if (hour < BUSINESS_HOURS.start || hour >= BUSINESS_HOURS.end) {
       throw new BadRequestException(
-        `Appointments must be between ${BUSINESS_HOURS.start}:00 and ${BUSINESS_HOURS.end}:00`
+        `Appointments must be between ${BUSINESS_HOURS.start}:00 and ${BUSINESS_HOURS.end}:00`,
       );
     }
 
@@ -82,7 +82,7 @@ export class AppointmentsService {
     // Validate service type if provided
     if (dto.serviceTypeId) {
       const serviceType = await this.serviceTypeRepository.findOne({
-        where: { id: dto.serviceTypeId, isActive: true }
+        where: { id: dto.serviceTypeId, isActive: true },
       });
       if (!serviceType) {
         throw new NotFoundException('Service type not found or inactive');
@@ -93,7 +93,7 @@ export class AppointmentsService {
     if (dto.operatorId) {
       const operator = await this.userRepository.findOne({
         where: { id: dto.operatorId },
-        relations: ['role']
+        relations: ['role'],
       });
       if (!operator || !['OPERATOR', 'ADMIN'].includes(operator.role?.name)) {
         throw new BadRequestException('Invalid operator selected');
@@ -103,14 +103,14 @@ export class AppointmentsService {
     // Check for time slot availability
     const endTime = new Date(appointmentDate.getTime() + duration * 60000);
     const isSlotAvailable = await this.isTimeSlotAvailable(
-      appointmentDate, 
-      endTime, 
-      dto.operatorId
+      appointmentDate,
+      endTime,
+      dto.operatorId,
     );
 
     if (!isSlotAvailable) {
       throw new ConflictException(
-        'Selected time slot is not available. Please choose a different time.'
+        'Selected time slot is not available. Please choose a different time.',
       );
     }
 
@@ -147,17 +147,17 @@ export class AppointmentsService {
     startTime: Date,
     endTime: Date,
     operatorId?: string,
-    excludeAppointmentId?: string
+    excludeAppointmentId?: string,
   ): Promise<boolean> {
     const query = this.appointmentRepository
       .createQueryBuilder('appointment')
       .where('appointment.status IN (:...statuses)', {
-        statuses: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS']
+        statuses: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'],
       })
       .andWhere(
         '(appointment.appointmentDate < :endTime AND ' +
-        'appointment.appointmentDate + INTERVAL \'1 minute\' * appointment.durationMinutes > :startTime)',
-        { startTime, endTime }
+          "appointment.appointmentDate + INTERVAL '1 minute' * appointment.durationMinutes > :startTime)",
+        { startTime, endTime },
       );
 
     if (operatorId) {
@@ -165,7 +165,9 @@ export class AppointmentsService {
     }
 
     if (excludeAppointmentId) {
-      query.andWhere('appointment.id != :excludeId', { excludeId: excludeAppointmentId });
+      query.andWhere('appointment.id != :excludeId', {
+        excludeId: excludeAppointmentId,
+      });
     }
 
     const conflictingAppointment = await query.getOne();
@@ -176,9 +178,9 @@ export class AppointmentsService {
    * Get available time slots for a specific date and operator
    */
   async getAvailableSlots(
-    operatorId?: string, 
-    date: Date = new Date(), 
-    durationMinutes: number = 60
+    operatorId?: string,
+    date: Date = new Date(),
+    durationMinutes: number = 60,
   ): Promise<string[]> {
     const dayStart = new Date(date);
     dayStart.setHours(BUSINESS_HOURS.start, 0, 0, 0);
@@ -188,7 +190,10 @@ export class AppointmentsService {
 
     // Don't show past slots for today
     const now = new Date();
-    const startTime = date.toDateString() === now.toDateString() && now > dayStart ? now : dayStart;
+    const startTime =
+      date.toDateString() === now.toDateString() && now > dayStart
+        ? now
+        : dayStart;
 
     // Get booked appointments for the day
     const query = this.appointmentRepository
@@ -196,7 +201,7 @@ export class AppointmentsService {
       .where('appointment.appointmentDate >= :dayStart', { dayStart })
       .andWhere('appointment.appointmentDate < :dayEnd', { dayEnd })
       .andWhere('appointment.status IN (:...statuses)', {
-        statuses: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS']
+        statuses: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'],
       });
 
     if (operatorId) {
@@ -208,15 +213,17 @@ export class AppointmentsService {
     // Generate available slots
     const slots: string[] = [];
     let current = new Date(startTime);
-    
+
     // Round up to next slot interval
     const minutes = current.getMinutes();
-    const roundedMinutes = Math.ceil(minutes / BUSINESS_HOURS.slotInterval) * BUSINESS_HOURS.slotInterval;
+    const roundedMinutes =
+      Math.ceil(minutes / BUSINESS_HOURS.slotInterval) *
+      BUSINESS_HOURS.slotInterval;
     current.setMinutes(roundedMinutes, 0, 0);
 
     while (current < dayEnd) {
       const slotEnd = new Date(current.getTime() + durationMinutes * 60000);
-      
+
       // Check if slot would extend beyond business hours
       if (slotEnd > dayEnd) {
         break;
@@ -224,7 +231,9 @@ export class AppointmentsService {
 
       // Check if slot conflicts with any booking
       const hasConflict = bookedAppointments.some((appt) => {
-        const apptEnd = new Date(appt.appointmentDate.getTime() + appt.durationMinutes * 60000);
+        const apptEnd = new Date(
+          appt.appointmentDate.getTime() + appt.durationMinutes * 60000,
+        );
         return current < apptEnd && slotEnd > appt.appointmentDate;
       });
 
@@ -234,7 +243,9 @@ export class AppointmentsService {
         slots.push(`${hours}:${minutes}`);
       }
 
-      current = new Date(current.getTime() + BUSINESS_HOURS.slotInterval * 60000);
+      current = new Date(
+        current.getTime() + BUSINESS_HOURS.slotInterval * 60000,
+      );
     }
 
     return slots;
@@ -271,7 +282,7 @@ export class AppointmentsService {
   async findOne(id: string, userId?: string): Promise<any> {
     const appointment = await this.appointmentRepository.findOne({
       where: { id },
-      relations: ['user', 'serviceType', 'operator']
+      relations: ['user', 'serviceType', 'operator'],
     });
 
     if (!appointment) {
@@ -282,9 +293,9 @@ export class AppointmentsService {
     if (userId && appointment.userId !== userId) {
       const user = await this.userRepository.findOne({
         where: { id: userId },
-        relations: ['role']
+        relations: ['role'],
       });
-      
+
       if (!user || !['ADMIN', 'OPERATOR'].includes(user.role?.name)) {
         throw new ForbiddenException('Not authorized to view this appointment');
       }
@@ -299,7 +310,7 @@ export class AppointmentsService {
   async cancel(id: string, userId: string, reason?: string): Promise<any> {
     const appointment = await this.appointmentRepository.findOne({
       where: { id },
-      relations: ['user']
+      relations: ['user'],
     });
 
     if (!appointment) {
@@ -311,17 +322,19 @@ export class AppointmentsService {
     }
 
     if (['COMPLETED', 'CANCELLED'].includes(appointment.status)) {
-      throw new ConflictException(`Cannot cancel appointment with status ${appointment.status}`);
+      throw new ConflictException(
+        `Cannot cancel appointment with status ${appointment.status}`,
+      );
     }
 
     // Check if cancellation is allowed (e.g., not too close to appointment time)
     const now = new Date();
     const timeDiff = appointment.appointmentDate.getTime() - now.getTime();
     const hoursUntilAppointment = timeDiff / (1000 * 60 * 60);
-    
+
     if (hoursUntilAppointment < 2) {
       throw new BadRequestException(
-        'Appointments cannot be cancelled less than 2 hours before the scheduled time'
+        'Appointments cannot be cancelled less than 2 hours before the scheduled time',
       );
     }
 
@@ -330,16 +343,16 @@ export class AppointmentsService {
     appointment.notes = {
       ...appointment.notes,
       cancelReason: reason || 'Cancelled by user',
-      cancelledAt: new Date().toISOString()
+      cancelledAt: new Date().toISOString(),
     };
 
     const updated = await this.appointmentRepository.save(appointment);
     this.logger.log(`Appointment ${id} cancelled by user ${userId}`);
 
-    return { 
-      success: true, 
-      message: 'Appointment cancelled successfully', 
-      data: updated 
+    return {
+      success: true,
+      message: 'Appointment cancelled successfully',
+      data: updated,
     };
   }
 
@@ -350,11 +363,11 @@ export class AppointmentsService {
     id: string,
     newDateTime: string,
     userId: string,
-    reason?: string
+    reason?: string,
   ): Promise<any> {
-    const appointment = await this.appointmentRepository.findOne({ 
+    const appointment = await this.appointmentRepository.findOne({
       where: { id },
-      relations: ['user']
+      relations: ['user'],
     });
 
     if (!appointment) {
@@ -367,32 +380,36 @@ export class AppointmentsService {
 
     if (['COMPLETED', 'CANCELLED'].includes(appointment.status)) {
       throw new ConflictException(
-        `Cannot reschedule appointment with status ${appointment.status}`
+        `Cannot reschedule appointment with status ${appointment.status}`,
       );
     }
 
     const newAppointmentDate = new Date(newDateTime);
     const now = new Date();
-    
+
     if (newAppointmentDate <= now) {
-      throw new BadRequestException('New appointment date must be in the future');
+      throw new BadRequestException(
+        'New appointment date must be in the future',
+      );
     }
 
     // Check business hours
     const hour = newAppointmentDate.getHours();
     if (hour < BUSINESS_HOURS.start || hour >= BUSINESS_HOURS.end) {
       throw new BadRequestException(
-        `Appointments must be between ${BUSINESS_HOURS.start}:00 and ${BUSINESS_HOURS.end}:00`
+        `Appointments must be between ${BUSINESS_HOURS.start}:00 and ${BUSINESS_HOURS.end}:00`,
       );
     }
 
     // Check availability for new time slot
-    const endTime = new Date(newAppointmentDate.getTime() + appointment.durationMinutes * 60000);
+    const endTime = new Date(
+      newAppointmentDate.getTime() + appointment.durationMinutes * 60000,
+    );
     const isAvailable = await this.isTimeSlotAvailable(
       newAppointmentDate,
       endTime,
       appointment.operatorId,
-      id // Exclude current appointment from conflict check
+      id, // Exclude current appointment from conflict check
     );
 
     if (!isAvailable) {
@@ -408,7 +425,7 @@ export class AppointmentsService {
       ...appointment.notes,
       rescheduleReason: reason || 'Rescheduled by user',
       rescheduledAt: new Date().toISOString(),
-      previousDate: appointment.appointmentDate.toISOString()
+      previousDate: appointment.appointmentDate.toISOString(),
     };
 
     const updated = await this.appointmentRepository.save(appointment);
@@ -425,9 +442,9 @@ export class AppointmentsService {
    * Confirm appointment by user
    */
   async confirmByUser(id: string, userId: string): Promise<any> {
-    const appointment = await this.appointmentRepository.findOne({ 
+    const appointment = await this.appointmentRepository.findOne({
       where: { id },
-      relations: ['user']
+      relations: ['user'],
     });
 
     if (!appointment) {
@@ -439,12 +456,14 @@ export class AppointmentsService {
     }
 
     if (appointment.status !== 'SCHEDULED') {
-      throw new BadRequestException('Only scheduled appointments can be confirmed');
+      throw new BadRequestException(
+        'Only scheduled appointments can be confirmed',
+      );
     }
 
     appointment.userConfirmed = true;
     appointment.userConfirmedAt = new Date();
-    
+
     // If operator also confirmed, update status
     if (appointment.operatorConfirmed) {
       appointment.status = 'CONFIRMED';
@@ -453,16 +472,24 @@ export class AppointmentsService {
     const updated = await this.appointmentRepository.save(appointment);
     this.logger.log(`Appointment ${id} confirmed by user ${userId}`);
 
-    return { 
-      success: true, 
-      message: 'Appointment confirmed successfully', 
-      data: updated 
+    return {
+      success: true,
+      message: 'Appointment confirmed successfully',
+      data: updated,
     };
   }
 
   // Admin/Operator methods remain the same but with improved error handling
   async findAll(query?: any): Promise<any> {
-    const { status, operatorId, userId, startDate, endDate, skip = 0, take = 20 } = query || {};
+    const {
+      status,
+      operatorId,
+      userId,
+      startDate,
+      endDate,
+      skip = 0,
+      take = 20,
+    } = query || {};
 
     const qb = this.appointmentRepository
       .createQueryBuilder('appointment')
@@ -471,14 +498,18 @@ export class AppointmentsService {
       .leftJoinAndSelect('appointment.operator', 'operator');
 
     if (status) qb.andWhere('appointment.status = :status', { status });
-    if (operatorId) qb.andWhere('appointment.operatorId = :operatorId', { operatorId });
+    if (operatorId)
+      qb.andWhere('appointment.operatorId = :operatorId', { operatorId });
     if (userId) qb.andWhere('appointment.userId = :userId', { userId });
 
     if (startDate && endDate) {
-      qb.andWhere('appointment.appointmentDate BETWEEN :startDate AND :endDate', {
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-      });
+      qb.andWhere(
+        'appointment.appointmentDate BETWEEN :startDate AND :endDate',
+        {
+          startDate: new Date(startDate),
+          endDate: new Date(endDate),
+        },
+      );
     }
 
     const [data, total] = await qb
@@ -490,10 +521,15 @@ export class AppointmentsService {
     return { success: true, data, total, skip, take };
   }
 
-  async updateStatus(id: string, newStatus: string, operatorId: string, reason?: string): Promise<any> {
-    const appointment = await this.appointmentRepository.findOne({ 
+  async updateStatus(
+    id: string,
+    newStatus: string,
+    operatorId: string,
+    reason?: string,
+  ): Promise<any> {
+    const appointment = await this.appointmentRepository.findOne({
       where: { id },
-      relations: ['user', 'operator']
+      relations: ['user', 'operator'],
     });
 
     if (!appointment) {
@@ -525,7 +561,7 @@ export class AppointmentsService {
         ...appointment.notes,
         statusChangeReason: reason,
         statusChangedAt: new Date().toISOString(),
-        changedBy: operatorId
+        changedBy: operatorId,
       };
     }
 
@@ -534,19 +570,30 @@ export class AppointmentsService {
       `Appointment ${id} status updated from ${oldStatus} to ${newStatus} by ${operatorId}`,
     );
 
-    return { success: true, message: 'Status updated successfully', data: updated };
+    return {
+      success: true,
+      message: 'Status updated successfully',
+      data: updated,
+    };
   }
-
-
 
   // Keep existing methods for backward compatibility
   async findByOperator(operatorId: string, options?: any): Promise<any> {
     return this.findAll({ ...options, operatorId });
   }
 
-  async getCalendar(operatorId?: string, startDate?: Date, endDate?: Date): Promise<any> {
-    const appointments = await this.findAll({ operatorId, startDate, endDate, take: 1000 });
-    
+  async getCalendar(
+    operatorId?: string,
+    startDate?: Date,
+    endDate?: Date,
+  ): Promise<any> {
+    const appointments = await this.findAll({
+      operatorId,
+      startDate,
+      endDate,
+      take: 1000,
+    });
+
     // Group by date
     const calendarData = {};
     appointments.data.forEach((appt) => {
@@ -562,11 +609,19 @@ export class AppointmentsService {
 
   // Placeholder methods for future implementation
   async createAdmin(dto: any, operatorId: string): Promise<any> {
-    throw new BadRequestException('Admin appointment creation not yet implemented');
+    throw new BadRequestException(
+      'Admin appointment creation not yet implemented',
+    );
   }
 
-  async assign(id: string, operatorId: string, assignedBy: string): Promise<any> {
-    const appointment = await this.appointmentRepository.findOne({ where: { id } });
+  async assign(
+    id: string,
+    operatorId: string,
+    assignedBy: string,
+  ): Promise<any> {
+    const appointment = await this.appointmentRepository.findOne({
+      where: { id },
+    });
     if (!appointment) {
       throw new NotFoundException(`Appointment ${id} not found`);
     }
@@ -574,11 +629,22 @@ export class AppointmentsService {
     appointment.operatorId = operatorId;
     const updated = await this.appointmentRepository.save(appointment);
 
-    return { success: true, message: 'Operator assigned successfully', data: updated };
+    return {
+      success: true,
+      message: 'Operator assigned successfully',
+      data: updated,
+    };
   }
 
-  async addNote(id: string, note: string, isInternal: boolean, userId: string): Promise<any> {
-    const appointment = await this.appointmentRepository.findOne({ where: { id } });
+  async addNote(
+    id: string,
+    note: string,
+    isInternal: boolean,
+    userId: string,
+  ): Promise<any> {
+    const appointment = await this.appointmentRepository.findOne({
+      where: { id },
+    });
     if (!appointment) {
       throw new NotFoundException(`Appointment ${id} not found`);
     }
@@ -588,7 +654,7 @@ export class AppointmentsService {
       ...appointment.notes,
       [noteKey]: note,
       [`${noteKey}AddedAt`]: new Date().toISOString(),
-      [`${noteKey}AddedBy`]: userId
+      [`${noteKey}AddedBy`]: userId,
     };
 
     const updated = await this.appointmentRepository.save(appointment);
@@ -596,7 +662,11 @@ export class AppointmentsService {
   }
 
   async createSlots(dto: any): Promise<any> {
-    return { success: true, message: 'Time slots feature not yet implemented', data: dto };
+    return {
+      success: true,
+      message: 'Time slots feature not yet implemented',
+      data: dto,
+    };
   }
 
   async getReminderHistory(id: string, userId: string): Promise<any> {
@@ -607,7 +677,10 @@ export class AppointmentsService {
     return { success: true, message: 'Reminder sent successfully' };
   }
 
-  async getOperatorAppointments(operatorId: string, options?: any): Promise<any> {
+  async getOperatorAppointments(
+    operatorId: string,
+    options?: any,
+  ): Promise<any> {
     return this.findByOperator(operatorId, options);
   }
 
@@ -615,7 +688,10 @@ export class AppointmentsService {
     return {
       success: true,
       message: 'Calendar export feature not yet implemented',
-      data: { format: 'ical', downloadUrl: '/api/v1/appointments/calendar.ics' }
+      data: {
+        format: 'ical',
+        downloadUrl: '/api/v1/appointments/calendar.ics',
+      },
     };
   }
 }

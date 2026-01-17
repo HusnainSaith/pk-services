@@ -28,7 +28,7 @@ export class RolesController {
   @Get('roles')
   @Permissions('roles:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'List all roles' })
+  @ApiOperation({ summary: '[Admin] List all roles' })
   findAllRoles() {
     return this.rolesService.findAll();
   }
@@ -36,7 +36,7 @@ export class RolesController {
   @Post('roles')
   @Permissions('roles:write')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Create role' })
+  @ApiOperation({ summary: '[Admin] Create role' })
   createRole(@Body() dto: CreateRoleDto) {
     return this.rolesService.create(dto);
   }
@@ -44,7 +44,7 @@ export class RolesController {
   @Get('roles/:id')
   @Permissions('roles:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get role details' })
+  @ApiOperation({ summary: '[Admin] Get role details' })
   findOneRole(@Param('id') id: string) {
     return this.rolesService.findOne(id);
   }
@@ -52,7 +52,7 @@ export class RolesController {
   @Put('roles/:id')
   @Permissions('roles:write')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Update role' })
+  @ApiOperation({ summary: '[Admin] Update role' })
   updateRole(@Param('id') id: string, @Body() dto: UpdateRoleDto) {
     return this.rolesService.update(id, dto);
   }
@@ -60,7 +60,7 @@ export class RolesController {
   @Delete('roles/:id')
   @Permissions('roles:delete')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Delete role' })
+  @ApiOperation({ summary: '[Admin] Delete role' })
   removeRole(@Param('id') id: string) {
     return this.rolesService.remove(id);
   }
@@ -69,7 +69,7 @@ export class RolesController {
   @Get('permissions')
   @Permissions('permissions:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'List all permissions' })
+  @ApiOperation({ summary: '[Admin] List all permissions' })
   findAllPermissions() {
     return this.rolesService.findAllPermissions();
   }
@@ -77,16 +77,22 @@ export class RolesController {
   @Post('roles/:id/permissions')
   @Permissions('roles:write')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Assign permissions to role' })
-  assignPermissionsToRole(@Param('id') id: string, @Body() dto: AssignPermissionsDto) {
+  @ApiOperation({ summary: '[Admin] Assign permissions to role' })
+  assignPermissionsToRole(
+    @Param('id') id: string,
+    @Body() dto: AssignPermissionsDto,
+  ) {
     return this.rolesService.assignPermissions(id, dto);
   }
 
   @Delete('roles/:roleId/permissions/:permissionId')
   @Permissions('roles:write')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Remove permission from role' })
-  removePermissionFromRole(@Param('roleId') roleId: string, @Param('permissionId') permissionId: string) {
+  @ApiOperation({ summary: '[Admin] Remove permission from role' })
+  removePermissionFromRole(
+    @Param('roleId') roleId: string,
+    @Param('permissionId') permissionId: string,
+  ) {
     return this.rolesService.removePermission(roleId, permissionId);
   }
 
@@ -94,7 +100,7 @@ export class RolesController {
   @Post('users/:id/roles')
   @Permissions('users:write')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Assign role to user' })
+  @ApiOperation({ summary: '[Admin] Assign role to user' })
   assignRoleToUser(@Param('id') id: string, @Body() dto: AssignRoleDto) {
     return this.rolesService.assignRoleToUser(id, dto);
   }
@@ -102,8 +108,11 @@ export class RolesController {
   @Post('users/:id/permissions')
   @Permissions('users:write')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Assign direct permission to user' })
-  assignPermissionToUser(@Param('id') id: string, @Body() dto: AssignPermissionsDto) {
+  @ApiOperation({ summary: '[Admin] Assign direct permission to user' })
+  assignPermissionToUser(
+    @Param('id') id: string,
+    @Body() dto: AssignPermissionsDto,
+  ) {
     return this.rolesService.assignPermissionToUser(id, dto);
   }
 }

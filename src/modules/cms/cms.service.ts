@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CmsContent } from './entities/cms-content.entity';
@@ -41,7 +46,9 @@ export class CmsService {
       });
 
       if (existing) {
-        throw new BadRequestException(`Content with slug "${slug}" already exists`);
+        throw new BadRequestException(
+          `Content with slug "${slug}" already exists`,
+        );
       }
 
       const content = this.cmsRepository.create({
@@ -70,7 +77,12 @@ export class CmsService {
   /**
    * Get all content with pagination and filtering
    */
-  async findAll(options?: { type?: string; status?: string; skip?: number; take?: number }): Promise<any> {
+  async findAll(options?: {
+    type?: string;
+    status?: string;
+    skip?: number;
+    take?: number;
+  }): Promise<any> {
     try {
       const skip = options?.skip || 0;
       const take = options?.take || 20;
@@ -178,7 +190,9 @@ export class CmsService {
           where: { slug: dto.slug },
         });
         if (existing) {
-          throw new BadRequestException(`Content with slug "${dto.slug}" already exists`);
+          throw new BadRequestException(
+            `Content with slug "${dto.slug}" already exists`,
+          );
         }
       }
 
@@ -302,7 +316,10 @@ export class CmsService {
   /**
    * Get published pages
    */
-  async findPublishedPages(options?: { skip?: number; take?: number }): Promise<any> {
+  async findPublishedPages(options?: {
+    skip?: number;
+    take?: number;
+  }): Promise<any> {
     const skip = options?.skip || 0;
     const take = options?.take || 20;
 
@@ -357,7 +374,10 @@ export class CmsService {
   /**
    * Get published news
    */
-  async findPublishedNews(options?: { skip?: number; take?: number }): Promise<any> {
+  async findPublishedNews(options?: {
+    skip?: number;
+    take?: number;
+  }): Promise<any> {
     const skip = options?.skip || 0;
     const take = options?.take || 20;
 
@@ -426,7 +446,11 @@ export class CmsService {
   /**
    * Get FAQs
    */
-  async findFaqs(options?: { skip?: number; take?: number; category?: string }): Promise<any> {
+  async findFaqs(options?: {
+    skip?: number;
+    take?: number;
+    category?: string;
+  }): Promise<any> {
     const skip = options?.skip || 0;
     const take = options?.take || 20;
     const where: any = { type: 'faq', status: 'published' };
@@ -535,15 +559,16 @@ export class CmsService {
    */
   async getStatistics(): Promise<any> {
     try {
-      const [totalContent, publishedContent, draftContent, totalViews] = await Promise.all([
-        this.cmsRepository.count(),
-        this.cmsRepository.count({ where: { status: 'published' } }),
-        this.cmsRepository.count({ where: { status: 'draft' } }),
-        this.cmsRepository
-          .createQueryBuilder('cms')
-          .select('SUM(cms.views)', 'total')
-          .getRawOne(),
-      ]);
+      const [totalContent, publishedContent, draftContent, totalViews] =
+        await Promise.all([
+          this.cmsRepository.count(),
+          this.cmsRepository.count({ where: { status: 'published' } }),
+          this.cmsRepository.count({ where: { status: 'draft' } }),
+          this.cmsRepository
+            .createQueryBuilder('cms')
+            .select('SUM(cms.views)', 'total')
+            .getRawOne(),
+        ]);
 
       const contentByType = await this.cmsRepository
         .createQueryBuilder('cms')

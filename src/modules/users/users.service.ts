@@ -15,6 +15,11 @@ import { AwsS3FolderService } from '../aws/services/aws-s3-folder.service';
 import { AwsS3UploadService } from '../../common/services/aws-s3-upload.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import {
+  UpdateExtendedProfileDto,
+  UpdateGdprConsentDto,
+  AccountDeletionRequestDto,
+} from './dto/update-extended-profile.dto';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
@@ -43,12 +48,36 @@ export class UsersService {
     }
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
+    
+    // Create user with only core fields
     const user = this.userRepository.create({
-      ...dto,
+      email: dto.email,
       password: hashedPassword,
+      fullName: dto.fullName,
+      phone: dto.phone,
+      roleId: dto.roleId,
+      isActive: dto.isActive !== undefined ? dto.isActive : true,
     });
 
     const savedUser = await this.userRepository.save(user);
+
+    // Create user profile with additional fields
+    const profile = this.userProfileRepository.create({
+      userId: savedUser.id,
+      fiscalCode: dto.fiscalCode,
+      address: dto.address,
+      city: dto.city,
+      postalCode: dto.postalCode,
+      province: dto.province,
+      birthDate: dto.birthDate,
+      birthPlace: dto.birthPlace,
+      gdprConsent: dto.gdprConsent || false,
+      gdprConsentDate: dto.gdprConsent ? new Date() : null,
+      privacyConsent: dto.privacyConsent || false,
+      privacyConsentDate: dto.privacyConsent ? new Date() : null,
+    });
+
+    await this.userProfileRepository.save(profile);
 
     // Create S3 folder structure for new user
     try {
@@ -63,6 +92,9 @@ export class UsersService {
       // Don't fail user creation if S3 fails - log it but continue
       // User can still function without S3 folders (they'll be created on first upload)
     }
+
+    // Remove password from response
+    delete savedUser.password;
 
     return {
       success: true,
@@ -96,7 +128,7 @@ export class UsersService {
     const user = await this.userRepository.findOne({
       where: { id },
       relations: ['role'],
-      select: ['id', 'email', 'fullName', 'password', 'createdAt', 'updatedAt']
+      select: ['id', 'email', 'fullName', 'password', 'createdAt', 'updatedAt'],
     });
     return user;
   }
@@ -122,14 +154,37 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
+    // Parse permissions from role if they exist
+    if (user.role && user.role.permissions) {
+      try {
+        user.permissions = JSON.parse(user.role.permissions);
+      } catch (error) {
+        this.logger.error(`Failed to parse permissions for user ${id}: ${error.message}`);
+        user.permissions = [];
+      }
+    } else {
+      user.permissions = [];
+    }
+
     return user;
   }
 
   async findAll() {
-    const users = await this.userRepository.find({
-      relations: ['role'],
-      select: ['id', 'email', 'fullName', 'createdAt', 'updatedAt'],
-    });
+    // Optimized: Use query builder with select for better performance
+    const users = await this.userRepository
+      .createQueryBuilder('user')
+      .leftJoin('user.role', 'role')
+      .select([
+        'user.id',
+        'user.email',
+        'user.fullName',
+        'user.isActive',
+        'user.createdAt',
+        'user.updatedAt',
+        'role.name',
+      ])
+      .orderBy('user.createdAt', 'DESC')
+      .getMany();
 
     return {
       success: true,
@@ -170,149 +225,211 @@ export class UsersService {
       }
     }
 
-    await this.userRepository.update(id, dto);
+    // Separate user fields from profile fields
+    const userFields: Partial<User> = {};
+    const profileFields: Partial<UserProfile> = {};
+
+    // User table fields
+    if (dto.email !== undefined) userFields.email = dto.email;
+    if (dto.fullName !== undefined) userFields.fullName = dto.fullName;
+    if (dto.phone !== undefined) userFields.phone = dto.phone;
+    if (dto.isActive !== undefined) userFields.isActive = dto.isActive;
+    if (dto.roleId !== undefined) userFields.roleId = dto.roleId;
+
+    // Profile fields
+    if (dto.fiscalCode !== undefined) profileFields.fiscalCode = dto.fiscalCode;
+    if (dto.address !== undefined) profileFields.address = dto.address;
+    if (dto.city !== undefined) profileFields.city = dto.city;
+    if (dto.postalCode !== undefined) profileFields.postalCode = dto.postalCode;
+    if (dto.province !== undefined) profileFields.province = dto.province;
+    if (dto.birthDate !== undefined) profileFields.birthDate = new Date(dto.birthDate);
+    if (dto.birthPlace !== undefined) profileFields.birthPlace = dto.birthPlace;
+    if (dto.gdprConsent !== undefined) {
+      profileFields.gdprConsent = dto.gdprConsent;
+      profileFields.gdprConsentDate = dto.gdprConsent ? new Date() : null;
+    }
+    if (dto.privacyConsent !== undefined) {
+      profileFields.privacyConsent = dto.privacyConsent;
+      profileFields.privacyConsentDate = dto.privacyConsent ? new Date() : null;
+    }
+
+    // Update user table
+    if (Object.keys(userFields).length > 0) {
+      await this.userRepository.update(id, userFields);
+    }
+
+    // Update or create profile
+    if (Object.keys(profileFields).length > 0) {
+      let profile = await this.userProfileRepository.findOne({
+        where: { userId: id },
+      });
+
+      if (profile) {
+        await this.userProfileRepository.update(profile.id, profileFields);
+      } else {
+        // Create profile if it doesn't exist
+        profile = this.userProfileRepository.create({
+          userId: id,
+          ...profileFields,
+        });
+        await this.userProfileRepository.save(profile);
+      }
+    }
+
     return this.findOne(id);
   }
 
   async remove(id: string) {
     // Use a transaction to ensure all deletions succeed or fail together
-    return await this.userRepository.manager.transaction(async (transactionalEntityManager) => {
-      // Find user with all relations
-      const user = await transactionalEntityManager.findOne(User, { 
-        where: { id },
-        relations: [
-          'profile', 
-          'familyMembers', 
-          'refreshTokens', 
-          'subscriptions',
-        ],
-      });
+    return await this.userRepository.manager.transaction(
+      async (transactionalEntityManager) => {
+        // Find user with all relations
+        const user = await transactionalEntityManager.findOne(User, {
+          where: { id },
+          relations: [
+            'profile',
+            'familyMembers',
+            'refreshTokens',
+            'subscriptions',
+          ],
+        });
 
-      if (!user) {
-        throw new NotFoundException('User not found');
-      }
-
-      this.logger.log(`Starting deletion process for user: ${id}`);
-
-      // Delete related entities in the correct order to avoid FK constraints
-      // Order matters: delete child entities before parent entities
-
-      // 1. Delete user profile (has FK to user)
-      if (user.profile) {
-        await transactionalEntityManager.remove(user.profile);
-        this.logger.log(`Deleted profile for user: ${id}`);
-      }
-
-      // 2. Delete family members (has CASCADE configured, but we'll be explicit)
-      if (user.familyMembers && user.familyMembers.length > 0) {
-        await transactionalEntityManager.remove(user.familyMembers);
-        this.logger.log(`Deleted ${user.familyMembers.length} family member(s) for user: ${id}`);
-      }
-
-      // 3. Delete refresh tokens
-      if (user.refreshTokens && user.refreshTokens.length > 0) {
-        await transactionalEntityManager.remove(user.refreshTokens);
-        this.logger.log(`Deleted ${user.refreshTokens.length} refresh token(s) for user: ${id}`);
-      }
-
-      // 4. Delete user subscriptions and their related payments
-      if (user.subscriptions && user.subscriptions.length > 0) {
-        // First delete payments associated with these subscriptions
-        for (const subscription of user.subscriptions) {
-          await transactionalEntityManager
-            .createQueryBuilder()
-            .delete()
-            .from('payments')
-            .where('subscription_id = :subscriptionId', { subscriptionId: subscription.id })
-            .execute();
+        if (!user) {
+          throw new NotFoundException('User not found');
         }
-        
-        await transactionalEntityManager.remove(user.subscriptions);
-        this.logger.log(`Deleted ${user.subscriptions.length} subscription(s) for user: ${id}`);
-      }
 
-      // 5. Delete other related entities using query builder for efficiency
-      // Delete service requests (both created and assigned)
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .delete()
-        .from('request_status_history')
-        .where('changed_by_id = :userId', { userId: id })
-        .execute();
+        this.logger.log(`Starting deletion process for user: ${id}`);
 
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .delete()
-        .from('service_requests')
-        .where('user_id = :userId OR assigned_operator_id = :userId', { userId: id })
-        .execute();
+        // Delete related entities in the correct order to avoid FK constraints
+        // Order matters: delete child entities before parent entities
 
-      // Delete appointments
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .delete()
-        .from('appointments')
-        .where('user_id = :userId OR operator_id = :userId', { userId: id })
-        .execute();
+        // 1. Delete user profile (has FK to user)
+        if (user.profile) {
+          await transactionalEntityManager.remove(user.profile);
+          this.logger.log(`Deleted profile for user: ${id}`);
+        }
 
-      // Delete notifications
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .delete()
-        .from('notifications')
-        .where('user_id = :userId', { userId: id })
-        .execute();
+        // 2. Delete family members (has CASCADE configured, but we'll be explicit)
+        if (user.familyMembers && user.familyMembers.length > 0) {
+          await transactionalEntityManager.remove(user.familyMembers);
+          this.logger.log(
+            `Deleted ${user.familyMembers.length} family member(s) for user: ${id}`,
+          );
+        }
 
-      // Delete course enrollments
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .delete()
-        .from('course_enrollments')
-        .where('user_id = :userId', { userId: id })
-        .execute();
+        // 3. Delete refresh tokens
+        if (user.refreshTokens && user.refreshTokens.length > 0) {
+          await transactionalEntityManager.remove(user.refreshTokens);
+          this.logger.log(
+            `Deleted ${user.refreshTokens.length} refresh token(s) for user: ${id}`,
+          );
+        }
 
-      // Delete CMS content authored by user
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .delete()
-        .from('cms_content')
-        .where('author_id = :userId', { userId: id })
-        .execute();
+        // 4. Delete user subscriptions and their related payments
+        if (user.subscriptions && user.subscriptions.length > 0) {
+          // First delete payments associated with these subscriptions
+          for (const subscription of user.subscriptions) {
+            await transactionalEntityManager
+              .createQueryBuilder()
+              .delete()
+              .from('payments')
+              .where('subscription_id = :subscriptionId', {
+                subscriptionId: subscription.id,
+              })
+              .execute();
+          }
 
-      // Delete audit logs
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .delete()
-        .from('audit_logs')
-        .where('user_id = :userId', { userId: id })
-        .execute();
+          await transactionalEntityManager.remove(user.subscriptions);
+          this.logger.log(
+            `Deleted ${user.subscriptions.length} subscription(s) for user: ${id}`,
+          );
+        }
 
-      // Delete user permissions
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .delete()
-        .from('user_permissions')
-        .where('user_id = :userId', { userId: id })
-        .execute();
+        // 5. Delete other related entities using query builder for efficiency
+        // Delete service requests (both created and assigned)
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .delete()
+          .from('request_status_history')
+          .where('changed_by_id = :userId', { userId: id })
+          .execute();
 
-      // Delete payments made by user (not associated with subscriptions)
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .delete()
-        .from('payments')
-        .where('user_id = :userId', { userId: id })
-        .execute();
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .delete()
+          .from('service_requests')
+          .where('user_id = :userId OR assigned_operator_id = :userId', {
+            userId: id,
+          })
+          .execute();
 
-      // Finally, delete the user
-      await transactionalEntityManager.remove(user);
-      
-      this.logger.log(`Successfully deleted user and all related data: ${id}`);
-      
-      return {
-        success: true,
-        message: 'User deleted successfully',
-      };
-    });
+        // Delete appointments
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .delete()
+          .from('appointments')
+          .where('user_id = :userId OR operator_id = :userId', { userId: id })
+          .execute();
+
+        // Delete notifications
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .delete()
+          .from('notifications')
+          .where('user_id = :userId', { userId: id })
+          .execute();
+
+        // Delete course enrollments
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .delete()
+          .from('course_enrollments')
+          .where('user_id = :userId', { userId: id })
+          .execute();
+
+        // Delete CMS content authored by user
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .delete()
+          .from('cms_content')
+          .where('author_id = :userId', { userId: id })
+          .execute();
+
+        // Delete audit logs
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .delete()
+          .from('audit_logs')
+          .where('user_id = :userId', { userId: id })
+          .execute();
+
+        // Delete user permissions
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .delete()
+          .from('user_permissions')
+          .where('user_id = :userId', { userId: id })
+          .execute();
+
+        // Delete payments made by user (not associated with subscriptions)
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .delete()
+          .from('payments')
+          .where('user_id = :userId', { userId: id })
+          .execute();
+
+        // Finally, delete the user
+        await transactionalEntityManager.remove(user);
+
+        this.logger.log(`Successfully deleted user and all related data: ${id}`);
+
+        return {
+          success: true,
+          message: 'User deleted successfully',
+        };
+      },
+    );
   }
 
   // Profile methods
@@ -352,7 +469,7 @@ export class UsersService {
   }
 
   async updateProfile(userId: string, dto: UpdateUserDto) {
-    const user = await this.userRepository.findOne({ 
+    const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: ['profile'],
     });
@@ -370,21 +487,28 @@ export class UsersService {
     }
 
     // Separate extended profile fields from user fields
-    const extendedProfileFields = ['nationality', 'maritalStatus', 'educationLevel', 'employmentStatus'];
     const userUpdateData = {};
     const profileUpdateData = {};
 
+    // Define which fields go to which table
+    const profileFields = [
+      'fiscalCode',
+      'address',
+      'city',
+      'postalCode',
+      'province',
+      'birthDate',
+      'birthPlace',
+      'avatarUrl',
+      'bio',
+      'gdprConsent',
+      'privacyConsent',
+    ];
+
     for (const key in dto) {
       if (dto[key] !== undefined) {
-        if (extendedProfileFields.includes(key)) {
-          // Map educationLevel to education in profile, employmentStatus to occupation
-          if (key === 'educationLevel') {
-            profileUpdateData['education'] = dto[key];
-          } else if (key === 'employmentStatus') {
-            profileUpdateData['occupation'] = dto[key];
-          } else {
-            profileUpdateData[key] = dto[key];
-          }
+        if (profileFields.includes(key)) {
+          profileUpdateData[key] = dto[key];
         } else {
           userUpdateData[key] = dto[key];
         }
@@ -394,19 +518,33 @@ export class UsersService {
     // Merge user updates
     Object.assign(user, userUpdateData);
 
-    // Auto-populate consent dates when consent is set to true
-    if (dto.gdprConsent === true) {
-      user.gdprConsentDate = new Date();
-    }
+    // Handle consent dates in profile
+    if (dto.gdprConsent !== undefined || dto.privacyConsent !== undefined) {
+      // Get or create profile
+      let profile = await this.userProfileRepository.findOne({
+        where: { userId },
+      });
 
-    if (dto.privacyConsent === true) {
-      user.privacyConsentDate = new Date();
-    }
+      if (!profile) {
+        profile = this.userProfileRepository.create({ userId });
+      }
 
-    // Default privacy consent to true if not explicitly set
-    if (dto.privacyConsent === undefined && !user.privacyConsent) {
-      user.privacyConsent = true;
-      user.privacyConsentDate = new Date();
+      // Auto-populate consent dates when consent is set to true
+      if (dto.gdprConsent === true) {
+        profileUpdateData['gdprConsent'] = true;
+        profileUpdateData['gdprConsentDate'] = new Date();
+      }
+
+      if (dto.privacyConsent === true) {
+        profileUpdateData['privacyConsent'] = true;
+        profileUpdateData['privacyConsentDate'] = new Date();
+      }
+
+      // Default privacy consent to true if not explicitly set
+      if (dto.privacyConsent === undefined && !profile.privacyConsent) {
+        profileUpdateData['privacyConsent'] = true;
+        profileUpdateData['privacyConsentDate'] = new Date();
+      }
     }
 
     // Save user first
@@ -456,7 +594,7 @@ export class UsersService {
     };
   }
 
-  async updateExtendedProfile(userId: string, dto: any) {
+  async updateExtendedProfile(userId: string, dto: UpdateExtendedProfileDto) {
     const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: ['profile'],
@@ -484,12 +622,15 @@ export class UsersService {
       throw new BadRequestException('No file provided');
     }
 
-    const isValidType = file.mimetype === 'image/jpeg' || 
-                       file.mimetype === 'image/png' || 
-                       file.mimetype === 'image/webp';
-    
+    const isValidType =
+      file.mimetype === 'image/jpeg' ||
+      file.mimetype === 'image/png' ||
+      file.mimetype === 'image/webp';
+
     if (!isValidType) {
-      throw new BadRequestException('Invalid file type. Allowed: JPEG, PNG, WebP');
+      throw new BadRequestException(
+        'Invalid file type. Allowed: JPEG, PNG, WebP',
+      );
     }
 
     if (file.size > 5242880) {
@@ -498,7 +639,10 @@ export class UsersService {
 
     try {
       // Upload to profile folder using the AWS S3 upload service (organized structure)
-      const { publicUrl } = await this.awsS3UploadService.uploadProfileImage(userId, file);
+      const { publicUrl } = await this.awsS3UploadService.uploadProfileImage(
+        userId,
+        file,
+      );
 
       // Get current avatar URL for cleanup
       const existingProfile = await this.userProfileRepository.findOne({
@@ -512,11 +656,15 @@ export class UsersService {
         // URL format: https://s3.region.amazonaws.com/bucket-name/users/userId/profile/filename.png
         // S3 Key should be: users/userId/profile/filename.png
         const urlParts = existingProfile.avatarUrl.split('/');
-        const bucketNameIndex = urlParts.indexOf(this.storageService.getBucketName());
+        const bucketNameIndex = urlParts.indexOf(
+          this.storageService.getBucketName(),
+        );
         if (bucketNameIndex !== -1 && bucketNameIndex + 1 < urlParts.length) {
           const s3Key = urlParts.slice(bucketNameIndex + 1).join('/');
-          this.storageService.deleteFile(s3Key).catch(err => {
-            this.logger.debug(`Background avatar deletion failed: ${err.message}`);
+          this.storageService.deleteFile(s3Key).catch((err) => {
+            this.logger.debug(
+              `Background avatar deletion failed: ${err.message}`,
+            );
           });
         }
       }
@@ -524,7 +672,7 @@ export class UsersService {
       // Single update query instead of find + save pattern
       const result = await this.userProfileRepository.upsert(
         { userId, avatarUrl: publicUrl },
-        ['userId']
+        ['userId'],
       );
 
       return {
@@ -607,7 +755,7 @@ export class UsersService {
       .leftJoinAndSelect('subscription.plan', 'plan')
       .where('user.id = :id', { id })
       .getOne();
-    
+
     if (!userWithSubscriptions) {
       throw new NotFoundException('User not found');
     }
@@ -620,44 +768,53 @@ export class UsersService {
   }
 
   // GDPR Compliance Methods
-  async updateGdprConsent(userId: string, dto: any) {
+  async updateGdprConsent(userId: string, dto: UpdateGdprConsentDto) {
     const user = await this.userRepository.findOne({ where: { id: userId } });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
+    // Get or create profile
+    let profile = await this.userProfileRepository.findOne({
+      where: { userId },
+    });
+
+    if (!profile) {
+      profile = this.userProfileRepository.create({ userId });
+    }
+
     // Update consent flags and auto-populate dates
     if (dto.gdprConsent !== undefined) {
-      user.gdprConsent = dto.gdprConsent;
+      profile.gdprConsent = dto.gdprConsent;
       if (dto.gdprConsent === true) {
-        user.gdprConsentDate = new Date();
+        profile.gdprConsentDate = new Date();
       }
     }
 
     if (dto.privacyConsent !== undefined) {
-      user.privacyConsent = dto.privacyConsent;
+      profile.privacyConsent = dto.privacyConsent;
       if (dto.privacyConsent === true) {
-        user.privacyConsentDate = new Date();
+        profile.privacyConsentDate = new Date();
       }
     }
 
     // Default privacy consent to true
-    if (!user.privacyConsent) {
-      user.privacyConsent = true;
-      user.privacyConsentDate = new Date();
+    if (!profile.privacyConsent) {
+      profile.privacyConsent = true;
+      profile.privacyConsentDate = new Date();
     }
 
-    await this.userRepository.save(user);
+    await this.userProfileRepository.save(profile);
 
     return {
       success: true,
       message: 'Consent preferences updated',
       data: {
-        gdprConsent: user.gdprConsent,
-        gdprConsentDate: user.gdprConsentDate,
-        privacyConsent: user.privacyConsent,
-        privacyConsentDate: user.privacyConsentDate,
+        gdprConsent: profile.gdprConsent,
+        gdprConsentDate: profile.gdprConsentDate,
+        privacyConsent: profile.privacyConsent,
+        privacyConsentDate: profile.privacyConsentDate,
       },
     };
   }
@@ -673,7 +830,7 @@ export class UsersService {
     };
   }
 
-  async requestAccountDeletion(userId: string, dto: any) {
+  async requestAccountDeletion(userId: string, dto: AccountDeletionRequestDto) {
     return {
       success: true,
       message: 'Account deletion request submitted',
@@ -691,47 +848,59 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    // Build consent history from user's consent dates
+    // Get user profile for consent data
+    const profile = await this.userProfileRepository.findOne({
+      where: { userId },
+    });
+
+    // Build consent history from profile's consent dates
     const consentHistory = [];
 
-    // Add GDPR consent record
-    if (user.gdprConsentDate) {
-      consentHistory.push({
-        type: 'GDPR Data Processing',
-        consent: user.gdprConsent,
-        date: user.gdprConsentDate,
-        timestamp: user.gdprConsentDate.toISOString(),
-      });
-    }
+    if (profile) {
+      // Add GDPR consent record
+      if (profile.gdprConsentDate) {
+        consentHistory.push({
+          type: 'GDPR Data Processing',
+          consent: profile.gdprConsent,
+          date: profile.gdprConsentDate,
+          timestamp: profile.gdprConsentDate.toISOString(),
+        });
+      }
 
-    // Add Privacy consent record
-    if (user.privacyConsentDate) {
-      consentHistory.push({
-        type: 'Privacy Policy',
-        consent: user.privacyConsent,
-        date: user.privacyConsentDate,
-        timestamp: user.privacyConsentDate.toISOString(),
-      });
+      // Add Privacy consent record
+      if (profile.privacyConsentDate) {
+        consentHistory.push({
+          type: 'Privacy Policy',
+          consent: profile.privacyConsent,
+          date: profile.privacyConsentDate,
+          timestamp: profile.privacyConsentDate.toISOString(),
+        });
+      }
     }
 
     // Sort by date descending (most recent first)
-    consentHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    consentHistory.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
 
     return {
       success: true,
       message: 'Consent history retrieved',
-      data: consentHistory.length > 0 ? consentHistory : [
-        {
-          type: 'GDPR Data Processing',
-          consent: user.gdprConsent || false,
-          date: user.gdprConsentDate || null,
-        },
-        {
-          type: 'Privacy Policy',
-          consent: user.privacyConsent || false,
-          date: user.privacyConsentDate || null,
-        },
-      ],
+      data:
+        consentHistory.length > 0
+          ? consentHistory
+          : [
+              {
+                type: 'GDPR Data Processing',
+                consent: profile?.gdprConsent || false,
+                date: profile?.gdprConsentDate || null,
+              },
+              {
+                type: 'Privacy Policy',
+                consent: profile?.privacyConsent || false,
+                date: profile?.privacyConsentDate || null,
+              },
+            ],
     };
   }
 }

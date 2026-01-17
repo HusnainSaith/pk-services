@@ -244,10 +244,7 @@ export class AdminRequestManagementController {
     summary: 'Bulk update status',
     description: 'Update status for multiple requests at once',
   })
-  bulkUpdateStatus(
-    @Body() dto: BulkUpdateStatusDto,
-    @CurrentUser() user: any,
-  ) {
+  bulkUpdateStatus(@Body() dto: BulkUpdateStatusDto, @CurrentUser() user: any) {
     if (!dto.requestIds || dto.requestIds.length === 0) {
       throw new BadRequestException('Request IDs are required');
     }

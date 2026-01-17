@@ -11,10 +11,18 @@ import {
   UseInterceptors,
   UploadedFile,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
 import { FamilyMembersService } from './family-members.service';
+import { UserRequest } from '../../common/interfaces/user-request.interface';
+import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { CreateFamilyMemberDto } from './dto/create-family-member.dto';
@@ -34,33 +42,33 @@ export class UsersController {
 
   // Customer Routes
   @Get('profile')
-  @Permissions('users:read_own')
+  @Permissions('profiles:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get own profile' })
-  getProfile(@CurrentUser() user: any) {
+  @ApiOperation({ summary: '[Customer] Get own profile' })
+  getProfile(@CurrentUser() user: UserRequest) {
     return this.usersService.getProfile(user.id);
   }
 
   @Put('profile')
-  @Permissions('users:write_own')
+  @Permissions('profiles:update')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Update own profile' })
-  updateProfile(@CurrentUser() user: any, @Body() dto: UpdateUserDto) {
+  @ApiOperation({ summary: '[Customer] Update own profile' })
+  updateProfile(@CurrentUser() user: UserRequest, @Body() dto: UpdateUserDto) {
     return this.usersService.updateProfile(user.id, dto);
   }
 
   @Get('profile/extended')
-  @Permissions('users:read_own')
+  @Permissions('profiles:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get extended profile' })
-  getExtendedProfile(@CurrentUser() user: any) {
+  @ApiOperation({ summary: '[Customer] Get extended profile' })
+  getExtendedProfile(@CurrentUser() user: UserRequest) {
     return this.usersService.getExtendedProfile(user.id);
   }
 
   @Put('profile/extended')
-  @Permissions('users:write_own')
+  @Permissions('profiles:update')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Update extended profile' })
+  @ApiOperation({ summary: '[Customer] Update extended profile' })
   updateExtendedProfile(
     @CurrentUser() user: any,
     @Body() dto: UpdateUserProfileDto,
@@ -69,9 +77,9 @@ export class UsersController {
   }
 
   @Post('avatar')
-  @Permissions('users:write_own')
+  @Permissions('profiles:update')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Upload avatar' })
+  @ApiOperation({ summary: '[Customer] Upload avatar' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -88,58 +96,72 @@ export class UsersController {
   })
   @UseInterceptors(FileInterceptor('file'))
   uploadAvatar(
-    @CurrentUser() user: any,
+    @CurrentUser() user: UserRequest,
     @UploadedFile() file: Express.Multer.File,
   ) {
     return this.usersService.uploadAvatar(user.id, file);
   }
 
   @Delete('avatar')
-  @Permissions('users:write_own')
+  @Permissions('profiles:update')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Delete avatar' })
-  deleteAvatar(@CurrentUser() user: any) {
+  @ApiOperation({ summary: '[Customer] Delete avatar' })
+  deleteAvatar(@CurrentUser() user: UserRequest) {
     return this.usersService.deleteAvatar(user.id);
   }
 
   // GDPR Compliance Routes
   @Post('gdpr/consent')
-  @Permissions('users:write_own')
+  @Permissions('profiles:update')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Update consent preferences' })
-  updateGdprConsent(@CurrentUser() user: any, @Body() dto: UpdateGdprConsentDto) {
+  @ApiOperation({ summary: '[Customer] Update consent preferences' })
+  updateGdprConsent(
+    @CurrentUser() user: UserRequest,
+    @Body() dto: UpdateGdprConsentDto,
+  ) {
     return this.usersService.updateGdprConsent(user.id, dto);
   }
 
   @Get('gdpr/data-export')
-  @Permissions('users:read_own')
+  @Permissions('profiles:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Request user data export' })
-  requestDataExport(@CurrentUser() user: any) {
+  @ApiOperation({ summary: '[Customer] Request user data export' })
+  requestDataExport(@CurrentUser() user: UserRequest) {
     return this.usersService.requestDataExport(user.id);
   }
 
   @Post('gdpr/deletion-request')
-  @Permissions('users:write_own')
+  @Permissions('profiles:update')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Request account deletion' })
-  requestAccountDeletion(@CurrentUser() user: any, @Body() dto: AccountDeletionRequestDto) {
+  @ApiOperation({ summary: '[Customer] Request account deletion' })
+  requestAccountDeletion(
+    @CurrentUser() user: UserRequest,
+    @Body() dto: AccountDeletionRequestDto,
+  ) {
     return this.usersService.requestAccountDeletion(user.id, dto);
   }
 
   @Get('gdpr/consent-history')
-  @Permissions('users:read_own')
+  @Permissions('profiles:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'View consent history' })
-  getConsentHistory(@CurrentUser() user: any) {
+  @ApiOperation({ summary: '[Customer] View consent history' })
+  getConsentHistory(@CurrentUser() user: UserRequest) {
     return this.usersService.getConsentHistory(user.id);
   }
 
   // Admin Routes
-  @Get()
-  @Permissions('users:read')
+  @Post()
+  @Permissions('users:create')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'List all users' })
+  @ApiOperation({ summary: '[Admin] Create new user' })
+  create(@Body() dto: CreateUserDto) {
+    return this.usersService.create(dto);
+  }
+
+  @Get()
+  @Permissions('users:list')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '[Admin] List all users' })
   findAll() {
     return this.usersService.findAll();
   }
@@ -147,15 +169,15 @@ export class UsersController {
   @Get(':id')
   @Permissions('users:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get user by ID' })
+  @ApiOperation({ summary: '[Admin] Get user by ID' })
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
   }
 
   @Put(':id')
-  @Permissions('users:write')
+  @Permissions('users:update')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Update user' })
+  @ApiOperation({ summary: '[Admin] Update user' })
   update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
     return this.usersService.update(id, dto);
   }
@@ -163,23 +185,23 @@ export class UsersController {
   @Delete(':id')
   @Permissions('users:delete')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Delete user' })
+  @ApiOperation({ summary: '[Admin] Delete user' })
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
   }
 
   @Patch(':id/activate')
-  @Permissions('users:write')
+  @Permissions('users:activate')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Activate user' })
+  @ApiOperation({ summary: '[Admin] Activate user' })
   activate(@Param('id') id: string) {
     return this.usersService.activate(id);
   }
 
   @Patch(':id/deactivate')
-  @Permissions('users:write')
+  @Permissions('users:activate')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Deactivate user' })
+  @ApiOperation({ summary: '[Admin] Deactivate user' })
   deactivate(@Param('id') id: string) {
     return this.usersService.deactivate(id);
   }
@@ -187,7 +209,7 @@ export class UsersController {
   @Get(':id/activity')
   @Permissions('users:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get user activity' })
+  @ApiOperation({ summary: '[Admin] Get user activity' })
   getUserActivity(@Param('id') id: string) {
     return this.usersService.getUserActivity(id);
   }
@@ -195,7 +217,7 @@ export class UsersController {
   @Get(':id/subscriptions')
   @Permissions('subscriptions:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get user subscriptions' })
+  @ApiOperation({ summary: '[Admin] Get user subscriptions' })
   getUserSubscriptions(@Param('id') id: string) {
     return this.usersService.getUserSubscriptions(id);
   }

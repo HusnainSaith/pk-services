@@ -21,68 +21,46 @@ export class UserProfile {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
+  // Personal Information
   @Column({ name: 'avatar_url', length: 500, nullable: true })
   avatarUrl: string;
 
   @Column({ type: 'text', nullable: true })
   bio: string;
 
-  @Column({ type: 'date', nullable: true, name: 'date_of_birth' })
-  dateOfBirth: Date;
+  @Column({ length: 16, nullable: true, name: 'fiscal_code' })
+  fiscalCode: string;
 
-  @Column({ length: 20, nullable: true })
-  gender: string;
-
-  @Column({ length: 100, nullable: true })
-  nationality: string;
-
-  @Column({ length: 50, nullable: true, name: 'id_card_number' })
-  idCardNumber: string;
-
-  @Column({ type: 'date', nullable: true, name: 'id_card_expiry' })
-  idCardExpiry: Date;
-
-  @Column({ length: 50, nullable: true, name: 'passport_number' })
-  passportNumber: string;
-
-  @Column({ type: 'date', nullable: true, name: 'passport_expiry' })
-  passportExpiry: Date;
-
-  @Column({ length: 20, nullable: true, name: 'marital_status' })
-  maritalStatus: string;
+  @Column({ type: 'text', nullable: true })
+  address: string;
 
   @Column({ length: 100, nullable: true })
-  occupation: string;
+  city: string;
 
-  @Column({ length: 200, nullable: true })
-  employer: string;
+  @Column({ length: 10, nullable: true, name: 'postal_code' })
+  postalCode: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, name: 'monthly_income' })
-  monthlyIncome: number;
+  @Column({ length: 2, nullable: true })
+  province: string;
 
-  @Column({ length: 255, nullable: true, name: 'emergency_contact_name' })
-  emergencyContactName: string;
+  @Column({ type: 'date', nullable: true, name: 'birth_date' })
+  birthDate: Date;
 
-  @Column({ length: 20, nullable: true, name: 'emergency_contact_phone' })
-  emergencyContactPhone: string;
+  @Column({ length: 100, nullable: true, name: 'birth_place' })
+  birthPlace: string;
 
-  @Column({ length: 50, nullable: true, name: 'emergency_contact_relationship' })
-  emergencyContactRelationship: string;
+  // GDPR and Privacy
+  @Column({ default: false, name: 'gdpr_consent' })
+  gdprConsent: boolean;
 
-  @Column({ length: 10, default: 'it', name: 'preferred_language' })
-  preferredLanguage: string;
+  @Column({ nullable: true, name: 'gdpr_consent_date' })
+  gdprConsentDate: Date;
 
-  @Column({ length: 20, default: 'email', name: 'preferred_communication' })
-  preferredCommunication: string;
+  @Column({ default: false, name: 'privacy_consent' })
+  privacyConsent: boolean;
 
-  @Column({ default: true, name: 'notifications_enabled' })
-  notificationsEnabled: boolean;
-
-  @Column({ default: true, name: 'email_notifications' })
-  emailNotifications: boolean;
-
-  @Column({ default: false, name: 'sms_notifications' })
-  smsNotifications: boolean;
+  @Column({ nullable: true, name: 'privacy_consent_date' })
+  privacyConsentDate: Date;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

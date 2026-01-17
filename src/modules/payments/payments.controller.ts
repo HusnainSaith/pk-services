@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Param,
-  UseGuards,
-  Body,
-} from '@nestjs/common';
+import { Controller, Get, Post, Param, UseGuards, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
@@ -23,7 +16,7 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('payments:read_own')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'List my payments' })
+  @ApiOperation({ summary: '[Customer] List my payments' })
   getMyPayments(@CurrentUser() user: any) {
     return this.paymentsService.findByUser(user.id);
   }
@@ -32,7 +25,7 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('payments:read_own')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Download receipt' })
+  @ApiOperation({ summary: '[Customer] Download payment receipt' })
   downloadReceipt(@Param('id') id: string, @CurrentUser() user: any) {
     return this.paymentsService.downloadReceipt(id, user.id);
   }
@@ -41,7 +34,7 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('payments:read_own')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Generate formal invoice' })
+  @ApiOperation({ summary: '[Customer] Generate formal invoice' })
   generateInvoice(@Param('id') id: string, @CurrentUser() user: any) {
     return this.paymentsService.generateInvoice(id, user.id);
   }
@@ -50,7 +43,7 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('payments:read_own')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Resend receipt email' })
+  @ApiOperation({ summary: '[Customer] Resend receipt email' })
   resendReceipt(@Param('id') id: string, @CurrentUser() user: any) {
     return this.paymentsService.resendReceipt(id, user.id);
   }
@@ -60,7 +53,7 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('payments:read')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'List all payments' })
+  @ApiOperation({ summary: '[Admin] List all payments' })
   getAllPayments() {
     return this.paymentsService.findAll();
   }
@@ -69,7 +62,7 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('payments:refund')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Process refund' })
+  @ApiOperation({ summary: '[Admin] Process payment refund' })
   processRefund(@Param('id') id: string, @Body() dto: any) {
     return { success: true, message: 'Refund processed' };
   }

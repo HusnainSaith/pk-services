@@ -5,9 +5,10 @@ import { User } from '../src/modules/users/entities/user.entity';
 import * as bcrypt from 'bcryptjs';
 import { RoleEnum } from '../src/modules/roles/role.enum';
 
-// Import the permissions seeding function
+// Import the seeding functions
 import { seedPermissions } from './permissions-seed';
 import { seedServiceTypes } from './service-types-seed';
+import { seedRolePermissions } from './role-permission-seed';
 
 async function seed() {
   await AppDataSource.initialize(); // Initialize connection once
@@ -77,8 +78,8 @@ async function seed() {
       console.log(`Admin user "${adminEmail}" already exists.`);
     }
 
-    // Now, run the permissions seed function, passing the dataSource
-    await seedPermissions(AppDataSource);
+    // Now, run the role-permission seed (comprehensive RBAC setup)
+    await seedRolePermissions(AppDataSource);
 
     // Run service types seed
     await seedServiceTypes();

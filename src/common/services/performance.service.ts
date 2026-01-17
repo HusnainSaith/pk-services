@@ -25,8 +25,11 @@ export class PerformanceService {
 
   constructor(private readonly configService: ConfigService) {
     this.maxMetrics = this.configService.get<number>('PERF_MAX_METRICS', 1000);
-    this.slowQueryThreshold = this.configService.get<number>('PERF_SLOW_QUERY_MS', 1000);
-    
+    this.slowQueryThreshold = this.configService.get<number>(
+      'PERF_SLOW_QUERY_MS',
+      1000,
+    );
+
     // Log performance stats every 5 minutes
     setInterval(() => this.logPerformanceStats(), 300000);
   }
@@ -36,24 +39,27 @@ export class PerformanceService {
    */
   startMeasurement(name: string): (metadata?: any) => void {
     const startTime = process.hrtime.bigint();
-    
+
     return (metadata?: any) => {
       const endTime = process.hrtime.bigint();
       const duration = Number(endTime - startTime) / 1000000;
-      
+
       this.recordMetric({
         name,
         duration,
         timestamp: new Date(),
         metadata,
       });
-      
+
       if (duration > this.slowQueryThreshold) {
-        this.logger.warn(`Slow operation detected: ${name} took ${duration.toFixed(2)}ms`, {
-          name,
-          duration,
-          metadata,
-        });
+        this.logger.warn(
+          `Slow operation detected: ${name} took ${duration.toFixed(2)}ms`,
+          {
+            name,
+            duration,
+            metadata,
+          },
+        );
       }
     };
   }
@@ -67,7 +73,7 @@ export class PerformanceService {
     metadata?: any,
   ): Promise<T> {
     const endMeasurement = this.startMeasurement(name);
-    
+
     try {
       const result = await fn();
       endMeasurement(metadata);
@@ -83,7 +89,7 @@ export class PerformanceService {
    */
   measureSync<T>(name: string, fn: () => T, metadata?: any): T {
     const endMeasurement = this.startMeasurement(name);
-    
+
     try {
       const result = fn();
       endMeasurement(metadata);
@@ -105,18 +111,21 @@ export class PerformanceService {
     memoryUsage: MemoryUsage;
   } {
     const totalMetrics = this.metrics.length;
-    const averageDuration = totalMetrics > 0 
-      ? this.metrics.reduce((sum, m) => sum + m.duration, 0) / totalMetrics 
-      : 0;
-    
-    const slowQueries = this.metrics.filter(m => m.duration > this.slowQueryThreshold).length;
-    
+    const averageDuration =
+      totalMetrics > 0
+        ? this.metrics.reduce((sum, m) => sum + m.duration, 0) / totalMetrics
+        : 0;
+
+    const slowQueries = this.metrics.filter(
+      (m) => m.duration > this.slowQueryThreshold,
+    ).length;
+
     const topSlowest = [...this.metrics]
       .sort((a, b) => b.duration - a.duration)
       .slice(0, 10);
-    
+
     const memoryUsage = process.memoryUsage();
-    
+
     return {
       totalMetrics,
       averageDuration,
@@ -130,7 +139,7 @@ export class PerformanceService {
    * Get metrics by name
    */
   getMetricsByName(name: string): PerformanceMetric[] {
-    return this.metrics.filter(m => m.name === name);
+    return this.metrics.filter((m) => m.name === name);
   }
 
   /**
@@ -145,7 +154,7 @@ export class PerformanceService {
    */
   private recordMetric(metric: PerformanceMetric): void {
     this.metrics.push(metric);
-    
+
     // Keep only recent metrics
     if (this.metrics.length > this.maxMetrics) {
       this.metrics.shift();
@@ -157,7 +166,7 @@ export class PerformanceService {
    */
   private logPerformanceStats(): void {
     const stats = this.getStats();
-    
+
     this.logger.log('Performance Statistics', {
       totalMetrics: stats.totalMetrics,
       averageDuration: `${stats.averageDuration.toFixed(2)}ms`,
@@ -168,14 +177,15 @@ export class PerformanceService {
         rss: `${(stats.memoryUsage.rss / 1024 / 1024).toFixed(2)}MB`,
       },
     });
-    
+
     // Log top slowest operations
     if (stats.topSlowest.length > 0) {
-      this.logger.debug('Top slowest operations:', 
-        stats.topSlowest.slice(0, 5).map(m => ({
+      this.logger.debug(
+        'Top slowest operations:',
+        stats.topSlowest.slice(0, 5).map((m) => ({
           name: m.name,
           duration: `${m.duration.toFixed(2)}ms`,
-        }))
+        })),
       );
     }
   }
@@ -185,25 +195,29 @@ export class PerformanceService {
  * Performance decorator for methods
  */
 export function Measure(name?: string) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return function (
+    target: any,
+    propertyKey: string,
+    descriptor: PropertyDescriptor,
+  ) {
     const originalMethod = descriptor.value;
     const measurementName = name || `${target.constructor.name}.${propertyKey}`;
-    
+
     descriptor.value = async function (...args: any[]) {
-      const performanceService = this.performanceService || 
-        global['performanceService']; // Fallback to global instance
-      
+      const performanceService =
+        this.performanceService || global['performanceService']; // Fallback to global instance
+
       if (performanceService) {
         return performanceService.measureAsync(
           measurementName,
           () => originalMethod.apply(this, args),
-          { args: args.length }
+          { args: args.length },
         );
       }
-      
+
       return originalMethod.apply(this, args);
     };
-    
+
     return descriptor;
   };
 }
