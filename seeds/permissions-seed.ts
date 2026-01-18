@@ -86,7 +86,7 @@ export async function seedPermissions(dataSource: DataSource) {
         // Appointments Management
         {
           resource: 'appointments',
-          actions: ['create', 'read', 'update', 'delete', 'list', 'assign'],
+          actions: ['create', 'read', 'update', 'delete', 'list', 'assign', 'reschedule'],
           description: 'Full appointment management',
         },
         {
@@ -237,7 +237,7 @@ export async function seedPermissions(dataSource: DataSource) {
         // Appointments (Own Only)
         {
           resource: 'appointments',
-          actions: ['create', 'read', 'update', 'cancel'],
+          actions: ['create', 'read', 'update', 'cancel', 'reschedule'],
           description: 'Own appointment management',
         },
         {

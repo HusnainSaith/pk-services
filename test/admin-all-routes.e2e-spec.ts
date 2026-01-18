@@ -1107,6 +1107,24 @@ describe('Admin All Routes E2E Test - Real Data', () => {
             console.log('Setup 12.5: Plan Reactivated');
         }
 
+        // Ensure subscription exists (Robustness fix)
+        if (subscriptionPlanId && createdCustomerId) {
+             // Try to assign subscription just in case it's missing
+             const subResp = await request(app.getHttpServer())
+             .post('/admin/user-subscriptions/assign')
+             .set('Authorization', `Bearer ${adminToken}`)
+             .send({
+                userId: createdCustomerId,
+                planId: subscriptionPlanId,
+                startDate: new Date().toISOString(),
+                endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+             });
+             if (subResp.status === 201) {
+                 userSubscriptionId = subResp.body.data.id;
+                 console.log('Setup 12.5: Created backup subscription');
+             }
+        }
+
         // Login as customer to create request
         const loginResp = await request(app.getHttpServer())
         .post('/auth/login')
