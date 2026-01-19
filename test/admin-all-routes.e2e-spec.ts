@@ -6,7 +6,7 @@ import { DataSource } from 'typeorm';
 
 /**
  * COMPREHENSIVE ADMIN ROUTES E2E TEST
- * 
+ *
  * Tests ALL admin-accessible routes with real database data (no mocks)
  * Covers 12 modules with 80+ admin routes
  */
@@ -17,7 +17,6 @@ describe('Admin All Routes E2E Test - Real Data', () => {
   let adminId: string;
   let createdUserId: string;
   let createdCustomerId: string;
-  let customerToken: string;
   let serviceTypeId: string;
   let serviceRequestId: string;
   let subscriptionPlanId: string;
@@ -26,8 +25,8 @@ describe('Admin All Routes E2E Test - Real Data', () => {
   let permissionId: string;
 
   const adminData = {
-    email: 'admin_labverse@gmail.com',  // Use seeded admin user
-    password: 'Admin@12345',
+    email: 'admin@pkservizi.com', // Use seeded admin user
+    password: 'Admin@123',
   };
 
   const customerData = {
@@ -51,7 +50,9 @@ describe('Admin All Routes E2E Test - Real Data', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ transform: true, whitelist: true }),
+    );
     await app.init();
 
     dataSource = moduleFixture.get<DataSource>(DataSource);
@@ -68,29 +69,68 @@ describe('Admin All Routes E2E Test - Real Data', () => {
       try {
         // Delete dependent records first
         if (userSubscriptionId) {
-          await dataSource.query('DELETE FROM user_subscriptions WHERE id = $1', [userSubscriptionId]);
+          await dataSource.query(
+            'DELETE FROM user_subscriptions WHERE id = $1',
+            [userSubscriptionId],
+          );
         }
         if (serviceRequestId) {
-          await dataSource.query('DELETE FROM request_status_history WHERE service_request_id = $1', [serviceRequestId]);
-          await dataSource.query('DELETE FROM service_requests WHERE id = $1', [serviceRequestId]);
+          await dataSource.query(
+            'DELETE FROM request_status_history WHERE service_request_id = $1',
+            [serviceRequestId],
+          );
+          await dataSource.query('DELETE FROM service_requests WHERE id = $1', [
+            serviceRequestId,
+          ]);
         }
         if (createdCustomerId) {
-          await dataSource.query('DELETE FROM family_members WHERE user_id = $1', [createdCustomerId]);
-          await dataSource.query('DELETE FROM service_requests WHERE user_id = $1', [createdCustomerId]);
-          await dataSource.query('DELETE FROM appointments WHERE user_id = $1', [createdCustomerId]);
-          await dataSource.query('DELETE FROM notifications WHERE user_id = $1', [createdCustomerId]);
-          await dataSource.query('DELETE FROM user_profiles WHERE user_id = $1', [createdCustomerId]);
-          await dataSource.query('DELETE FROM refresh_tokens WHERE user_id = $1', [createdCustomerId]);
-          await dataSource.query('DELETE FROM users WHERE id = $1', [createdCustomerId]);
+          await dataSource.query(
+            'DELETE FROM family_members WHERE user_id = $1',
+            [createdCustomerId],
+          );
+          await dataSource.query(
+            'DELETE FROM service_requests WHERE user_id = $1',
+            [createdCustomerId],
+          );
+          await dataSource.query(
+            'DELETE FROM appointments WHERE user_id = $1',
+            [createdCustomerId],
+          );
+          await dataSource.query(
+            'DELETE FROM notifications WHERE user_id = $1',
+            [createdCustomerId],
+          );
+          await dataSource.query(
+            'DELETE FROM user_profiles WHERE user_id = $1',
+            [createdCustomerId],
+          );
+          await dataSource.query(
+            'DELETE FROM refresh_tokens WHERE user_id = $1',
+            [createdCustomerId],
+          );
+          await dataSource.query('DELETE FROM users WHERE id = $1', [
+            createdCustomerId,
+          ]);
         }
         if (createdUserId) {
-          await dataSource.query('DELETE FROM user_profiles WHERE user_id = $1', [createdUserId]);
-          await dataSource.query('DELETE FROM refresh_tokens WHERE user_id = $1', [createdUserId]);
-          await dataSource.query('DELETE FROM users WHERE id = $1', [createdUserId]);
+          await dataSource.query(
+            'DELETE FROM user_profiles WHERE user_id = $1',
+            [createdUserId],
+          );
+          await dataSource.query(
+            'DELETE FROM refresh_tokens WHERE user_id = $1',
+            [createdUserId],
+          );
+          await dataSource.query('DELETE FROM users WHERE id = $1', [
+            createdUserId,
+          ]);
         }
         // Don't delete the seeded admin user - it's shared across tests
         if (subscriptionPlanId) {
-          await dataSource.query('DELETE FROM subscription_plans WHERE id = $1', [subscriptionPlanId]);
+          await dataSource.query(
+            'DELETE FROM subscription_plans WHERE id = $1',
+            [subscriptionPlanId],
+          );
         }
         console.log('\n✅ Test data cleaned up');
       } catch (error) {
@@ -117,8 +157,11 @@ describe('Admin All Routes E2E Test - Real Data', () => {
       expect(response.body.data.accessToken).toBeDefined();
       adminToken = response.body.data.accessToken;
       adminId = response.body.data.user.id;
-      
-      console.log('✅ POST /auth/login - Admin logged in, token length:', adminToken.length);
+
+      console.log(
+        '✅ POST /auth/login - Admin logged in, token length:',
+        adminToken.length,
+      );
       console.log('✅ Admin ID:', adminId);
     });
 
@@ -130,7 +173,10 @@ describe('Admin All Routes E2E Test - Real Data', () => {
 
       const userData = response.body.data.data || response.body.data;
       expect(userData.role).toBeDefined();
-      console.log('✅ GET /auth/me - Role:', userData.role?.name || userData.role);
+      console.log(
+        '✅ GET /auth/me - Role:',
+        userData.role?.name || userData.role,
+      );
     });
   });
 
@@ -158,7 +204,11 @@ describe('Admin All Routes E2E Test - Real Data', () => {
         expect(createdUserId).toBeDefined();
         console.log('✅ POST /users - New user created:', createdUserId);
       } else {
-        console.log('⚠️ POST /users - Failed:', response.status, response.body.message);
+        console.log(
+          '⚠️ POST /users - Failed:',
+          response.status,
+          response.body.message,
+        );
         // Use admin user as fallback for dependent tests
         createdUserId = adminId;
       }
@@ -172,7 +222,11 @@ describe('Admin All Routes E2E Test - Real Data', () => {
       if (response.status === 200) {
         expect(Array.isArray(response.body.data)).toBe(true);
         expect(response.body.data.length).toBeGreaterThan(0);
-        console.log('✅ GET /users - Listed', response.body.data.length, 'users');
+        console.log(
+          '✅ GET /users - Listed',
+          response.body.data.length,
+          'users',
+        );
       } else {
         console.log('⚠️ GET /users - Failed:', response.status);
       }
@@ -219,7 +273,9 @@ describe('Admin All Routes E2E Test - Real Data', () => {
 
     it('PATCH /users/:id/activate - Activate user', async () => {
       if (!createdUserId || createdUserId === adminId) {
-        console.log('⚠️ PATCH /users/:id/activate - Skipping (no user or using admin)');
+        console.log(
+          '⚠️ PATCH /users/:id/activate - Skipping (no user or using admin)',
+        );
         return;
       }
 
@@ -238,7 +294,9 @@ describe('Admin All Routes E2E Test - Real Data', () => {
 
     it('PATCH /users/:id/deactivate - Deactivate user', async () => {
       if (!createdUserId || createdUserId === adminId) {
-        console.log('⚠️ PATCH /users/:id/deactivate - Skipping (no user or using admin)');
+        console.log(
+          '⚠️ PATCH /users/:id/deactivate - Skipping (no user or using admin)',
+        );
         return;
       }
 
@@ -251,7 +309,10 @@ describe('Admin All Routes E2E Test - Real Data', () => {
         expect(response.body).toBeDefined();
         console.log('✅ PATCH /users/:id/deactivate - User deactivated');
       } else {
-        console.log('⚠️ PATCH /users/:id/deactivate - Failed:', response.status);
+        console.log(
+          '⚠️ PATCH /users/:id/deactivate - Failed:',
+          response.status,
+        );
       }
     });
 
@@ -290,15 +351,15 @@ describe('Admin All Routes E2E Test - Real Data', () => {
 
   describe('2.5 Customer Setup', () => {
     it('Setup: Register Customer', async () => {
-       const customerResp = await request(app.getHttpServer())
+      const customerResp = await request(app.getHttpServer())
         .post('/auth/register')
         .send(customerData);
-      
+
       if (customerResp.status !== 201) {
-          console.log('⚠️ POST /auth/register Failed:', customerResp.status);
+        console.log('⚠️ POST /auth/register Failed:', customerResp.status);
       }
       expect(customerResp.status).toBe(201);
-      
+
       createdCustomerId = customerResp.body.user.id;
 
       const loginResp = await request(app.getHttpServer())
@@ -320,15 +381,19 @@ describe('Admin All Routes E2E Test - Real Data', () => {
 
   describe('3. Service Types Management', () => {
     it('GET /service-types - List all service types', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/service-types');
+      const response = await request(app.getHttpServer()).get('/service-types');
 
       if (response.status === 200) {
         expect(Array.isArray(response.body.data)).toBe(true);
         if (response.body.data.length > 0) {
           serviceTypeId = response.body.data[0].id;
         }
-        console.log('✅ GET /service-types - Listed', response.body.data.length, 'service types, ID:', serviceTypeId || 'none');
+        console.log(
+          '✅ GET /service-types - Listed',
+          response.body.data.length,
+          'service types, ID:',
+          serviceTypeId || 'none',
+        );
       } else {
         console.log('⚠️ GET /service-types - Failed:', response.status);
       }
@@ -336,7 +401,11 @@ describe('Admin All Routes E2E Test - Real Data', () => {
 
     it('POST /service-types - Create service type', async () => {
       if (serviceTypeId) {
-        console.log('✅ POST /service-types - Skipping (already have ID:', serviceTypeId, ')');
+        console.log(
+          '✅ POST /service-types - Skipping (already have ID:',
+          serviceTypeId,
+          ')',
+        );
         return;
       }
 
@@ -346,7 +415,7 @@ describe('Admin All Routes E2E Test - Real Data', () => {
         description: 'Created by admin E2E test',
         category: 'fiscal',
         processingTime: 5,
-        basePrice: 50.00,
+        basePrice: 50.0,
         isActive: true,
       };
 
@@ -358,9 +427,16 @@ describe('Admin All Routes E2E Test - Real Data', () => {
       if (response.status === 201) {
         serviceTypeId = response.body.data.id;
         expect(serviceTypeId).toBeDefined();
-        console.log('✅ POST /service-types - Service type created:', serviceTypeId);
+        console.log(
+          '✅ POST /service-types - Service type created:',
+          serviceTypeId,
+        );
       } else {
-        console.log('⚠️ POST /service-types - Failed:', response.status, response.body.message);
+        console.log(
+          '⚠️ POST /service-types - Failed:',
+          response.status,
+          response.body.message,
+        );
       }
     });
 
@@ -370,8 +446,9 @@ describe('Admin All Routes E2E Test - Real Data', () => {
         return;
       }
 
-      const response = await request(app.getHttpServer())
-        .get(`/service-types/${serviceTypeId}`);
+      const response = await request(app.getHttpServer()).get(
+        `/service-types/${serviceTypeId}`,
+      );
 
       if (response.status === 200) {
         expect(response.body.data.id).toBe(serviceTypeId);
@@ -404,7 +481,9 @@ describe('Admin All Routes E2E Test - Real Data', () => {
 
     it('PUT /service-types/:id/schema - Update form schema', async () => {
       if (!serviceTypeId) {
-        console.log('⚠️ PUT /service-types/:id/schema - No service type available');
+        console.log(
+          '⚠️ PUT /service-types/:id/schema - No service type available',
+        );
         return;
       }
 
@@ -412,9 +491,7 @@ describe('Admin All Routes E2E Test - Real Data', () => {
         .put(`/service-types/${serviceTypeId}/schema`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
-          fields: [
-            { name: 'testField', type: 'text', required: true },
-          ],
+          fields: [{ name: 'testField', type: 'text', required: true }],
         });
 
       if (response.status === 404) {
@@ -428,7 +505,9 @@ describe('Admin All Routes E2E Test - Real Data', () => {
 
     it('PATCH /service-types/:id/activate - Toggle activation', async () => {
       if (!serviceTypeId) {
-        console.log('⚠️ PATCH /service-types/:id/activate - No service type available');
+        console.log(
+          '⚠️ PATCH /service-types/:id/activate - No service type available',
+        );
         return;
       }
 
@@ -439,14 +518,17 @@ describe('Admin All Routes E2E Test - Real Data', () => {
       if (response.status === 200) {
         // expect(response.body.data).toBeDefined();
         expect(response.body).toBeDefined();
-        console.log('✅ PATCH /service-types/:id/activate - Activation toggled');
+        console.log(
+          '✅ PATCH /service-types/:id/activate - Activation toggled',
+        );
       } else {
-        console.log('⚠️ PATCH /service-types/:id/activate - Failed:', response.status);
+        console.log(
+          '⚠️ PATCH /service-types/:id/activate - Failed:',
+          response.status,
+        );
       }
     });
   });
-
-
 
   // ============================================================================
   // 5. SUBSCRIPTION PLANS MANAGEMENT (Admin)
@@ -464,15 +546,27 @@ describe('Admin All Routes E2E Test - Real Data', () => {
         if (response.body.data.length > 0) {
           subscriptionPlanId = response.body.data[0].id;
         }
-        console.log('✅ GET /admin/subscription-plans - Listed', response.body.data.length, 'plans, ID:', subscriptionPlanId || 'none');
+        console.log(
+          '✅ GET /admin/subscription-plans - Listed',
+          response.body.data.length,
+          'plans, ID:',
+          subscriptionPlanId || 'none',
+        );
       } else {
-        console.log('⚠️ GET /admin/subscription-plans - Failed:', response.status);
+        console.log(
+          '⚠️ GET /admin/subscription-plans - Failed:',
+          response.status,
+        );
       }
     });
 
     it('POST /admin/subscription-plans - Create new plan', async () => {
       if (subscriptionPlanId) {
-        console.log('✅ POST /admin/subscription-plans - Skipping (already have ID:', subscriptionPlanId, ')');
+        console.log(
+          '✅ POST /admin/subscription-plans - Skipping (already have ID:',
+          subscriptionPlanId,
+          ')',
+        );
         return;
       }
 
@@ -496,15 +590,24 @@ describe('Admin All Routes E2E Test - Real Data', () => {
       if (response.status === 201) {
         subscriptionPlanId = response.body.data.id;
         expect(subscriptionPlanId).toBeDefined();
-        console.log('✅ POST /admin/subscription-plans - Plan created:', subscriptionPlanId);
+        console.log(
+          '✅ POST /admin/subscription-plans - Plan created:',
+          subscriptionPlanId,
+        );
       } else {
-        console.log('⚠️ POST /admin/subscription-plans - Failed:', response.status, response.body.message);
+        console.log(
+          '⚠️ POST /admin/subscription-plans - Failed:',
+          response.status,
+          response.body.message,
+        );
       }
     });
 
     it('GET /admin/subscription-plans/:id - Get plan details', async () => {
       if (!subscriptionPlanId) {
-        console.log('⚠️ GET /admin/subscription-plans/:id - No plan ID available');
+        console.log(
+          '⚠️ GET /admin/subscription-plans/:id - No plan ID available',
+        );
         return;
       }
 
@@ -516,13 +619,18 @@ describe('Admin All Routes E2E Test - Real Data', () => {
         expect(response.body.data.id).toBe(subscriptionPlanId);
         console.log('✅ GET /admin/subscription-plans/:id - Plan retrieved');
       } else {
-        console.log('⚠️ GET /admin/subscription-plans/:id - Failed:', response.status);
+        console.log(
+          '⚠️ GET /admin/subscription-plans/:id - Failed:',
+          response.status,
+        );
       }
     });
 
     it('PUT /admin/subscription-plans/:id - Update plan', async () => {
       if (!subscriptionPlanId) {
-        console.log('⚠️ PUT /admin/subscription-plans/:id - No plan ID available');
+        console.log(
+          '⚠️ PUT /admin/subscription-plans/:id - No plan ID available',
+        );
         return;
       }
 
@@ -538,7 +646,10 @@ describe('Admin All Routes E2E Test - Real Data', () => {
         expect(response.body.data).toBeDefined();
         console.log('✅ PUT /admin/subscription-plans/:id - Plan updated');
       } else {
-        console.log('⚠️ PUT /admin/subscription-plans/:id - Failed:', response.status);
+        console.log(
+          '⚠️ PUT /admin/subscription-plans/:id - Failed:',
+          response.status,
+        );
       }
     });
 
@@ -549,17 +660,26 @@ describe('Admin All Routes E2E Test - Real Data', () => {
 
       if (response.status === 200) {
         expect(response.body.data).toBeDefined();
-        console.log('✅ GET /admin/subscription-plans/public/comparison - Comparison retrieved');
+        console.log(
+          '✅ GET /admin/subscription-plans/public/comparison - Comparison retrieved',
+        );
       } else if (response.status === 404) {
-        console.log('⚠️ GET /admin/subscription-plans/public/comparison - Route not implemented');
+        console.log(
+          '⚠️ GET /admin/subscription-plans/public/comparison - Route not implemented',
+        );
       } else {
-        console.log('⚠️ GET /admin/subscription-plans/public/comparison - Failed:', response.status);
+        console.log(
+          '⚠️ GET /admin/subscription-plans/public/comparison - Failed:',
+          response.status,
+        );
       }
     });
 
     it('GET /admin/subscription-plans/:id/stats - Get plan statistics', async () => {
       if (!subscriptionPlanId) {
-        console.log('⚠️ GET /admin/subscription-plans/:id/stats - No plan ID available');
+        console.log(
+          '⚠️ GET /admin/subscription-plans/:id/stats - No plan ID available',
+        );
         return;
       }
 
@@ -569,17 +689,26 @@ describe('Admin All Routes E2E Test - Real Data', () => {
 
       if (response.status === 200) {
         expect(response.body.data).toBeDefined();
-        console.log('✅ GET /admin/subscription-plans/:id/stats - Statistics retrieved');
+        console.log(
+          '✅ GET /admin/subscription-plans/:id/stats - Statistics retrieved',
+        );
       } else if (response.status === 404) {
-        console.log('⚠️ GET /admin/subscription-plans/:id/stats - Route not implemented');
+        console.log(
+          '⚠️ GET /admin/subscription-plans/:id/stats - Route not implemented',
+        );
       } else {
-        console.log('⚠️ GET /admin/subscription-plans/:id/stats - Failed:', response.status);
+        console.log(
+          '⚠️ GET /admin/subscription-plans/:id/stats - Failed:',
+          response.status,
+        );
       }
     });
 
     it('POST /admin/subscription-plans/:id/clone - Clone plan', async () => {
       if (!subscriptionPlanId) {
-        console.log('⚠️ POST /admin/subscription-plans/:id/clone - No plan ID available');
+        console.log(
+          '⚠️ POST /admin/subscription-plans/:id/clone - No plan ID available',
+        );
         return;
       }
 
@@ -595,16 +724,25 @@ describe('Admin All Routes E2E Test - Real Data', () => {
         expect(response.body.data.id).toBeDefined();
         // Clean up cloned plan
         const clonedId = response.body.data.id;
-        await dataSource.query('DELETE FROM subscription_plans WHERE id = $1', [clonedId]);
-        console.log('✅ POST /admin/subscription-plans/:id/clone - Plan cloned');
+        await dataSource.query('DELETE FROM subscription_plans WHERE id = $1', [
+          clonedId,
+        ]);
+        console.log(
+          '✅ POST /admin/subscription-plans/:id/clone - Plan cloned',
+        );
       } else {
-        console.log('⚠️ POST /admin/subscription-plans/:id/clone - Failed:', response.status);
+        console.log(
+          '⚠️ POST /admin/subscription-plans/:id/clone - Failed:',
+          response.status,
+        );
       }
     });
 
     it('DELETE /admin/subscription-plans/:id - Deactivate plan', async () => {
       if (!subscriptionPlanId) {
-        console.log('⚠️ DELETE /admin/subscription-plans/:id - No plan ID available');
+        console.log(
+          '⚠️ DELETE /admin/subscription-plans/:id - No plan ID available',
+        );
         return;
       }
 
@@ -614,9 +752,14 @@ describe('Admin All Routes E2E Test - Real Data', () => {
 
       if (response.status === 200) {
         expect(response.body.data).toBeDefined();
-        console.log('✅ DELETE /admin/subscription-plans/:id - Plan deactivated');
+        console.log(
+          '✅ DELETE /admin/subscription-plans/:id - Plan deactivated',
+        );
       } else {
-        console.log('⚠️ DELETE /admin/subscription-plans/:id - Failed:', response.status);
+        console.log(
+          '⚠️ DELETE /admin/subscription-plans/:id - Failed:',
+          response.status,
+        );
       }
     });
   });
@@ -633,15 +776,24 @@ describe('Admin All Routes E2E Test - Real Data', () => {
 
       if (response.status === 200) {
         expect(Array.isArray(response.body.data)).toBe(true);
-        console.log('✅ GET /admin/user-subscriptions - Listed', response.body.data.length, 'subscriptions');
+        console.log(
+          '✅ GET /admin/user-subscriptions - Listed',
+          response.body.data.length,
+          'subscriptions',
+        );
       } else {
-        console.log('⚠️ GET /admin/user-subscriptions - Failed:', response.status);
+        console.log(
+          '⚠️ GET /admin/user-subscriptions - Failed:',
+          response.status,
+        );
       }
     });
 
     it('POST /admin/user-subscriptions/assign - Manually assign subscription', async () => {
       if (!subscriptionPlanId || !createdCustomerId) {
-        console.log('⚠️ POST /admin/user-subscriptions/assign - Missing plan or user');
+        console.log(
+          '⚠️ POST /admin/user-subscriptions/assign - Missing plan or user',
+        );
         return;
       }
 
@@ -652,18 +804,25 @@ describe('Admin All Routes E2E Test - Real Data', () => {
           userId: createdCustomerId,
           planId: subscriptionPlanId,
           startDate: new Date().toISOString(),
-          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          endDate: new Date(
+            Date.now() + 30 * 24 * 60 * 60 * 1000,
+          ).toISOString(),
         })
         .expect(201);
 
       userSubscriptionId = response.body.data.id;
       expect(userSubscriptionId).toBeDefined();
-      console.log('✅ POST /admin/user-subscriptions/assign - Subscription assigned:', userSubscriptionId);
+      console.log(
+        '✅ POST /admin/user-subscriptions/assign - Subscription assigned:',
+        userSubscriptionId,
+      );
     });
 
     it('GET /admin/user-subscriptions/:id - Get subscription details', async () => {
       if (!userSubscriptionId) {
-        console.log('⚠️ GET /admin/user-subscriptions/:id - No subscription available');
+        console.log(
+          '⚠️ GET /admin/user-subscriptions/:id - No subscription available',
+        );
         return;
       }
 
@@ -673,12 +832,16 @@ describe('Admin All Routes E2E Test - Real Data', () => {
         .expect(200);
 
       expect(response.body.data.id).toBe(userSubscriptionId);
-      console.log('✅ GET /admin/user-subscriptions/:id - Subscription retrieved');
+      console.log(
+        '✅ GET /admin/user-subscriptions/:id - Subscription retrieved',
+      );
     });
 
     it('GET /admin/user-subscriptions/user/:userId - Get subscription history', async () => {
       if (!createdCustomerId) {
-        console.log('⚠️ GET /admin/user-subscriptions/user/:userId - No user available');
+        console.log(
+          '⚠️ GET /admin/user-subscriptions/user/:userId - No user available',
+        );
         return;
       }
 
@@ -688,12 +851,16 @@ describe('Admin All Routes E2E Test - Real Data', () => {
         .expect(200);
 
       expect(Array.isArray(response.body.data)).toBe(true);
-      console.log('✅ GET /admin/user-subscriptions/user/:userId - History retrieved');
+      console.log(
+        '✅ GET /admin/user-subscriptions/user/:userId - History retrieved',
+      );
     });
 
     it('PATCH /admin/user-subscriptions/:id/status - Update subscription status', async () => {
       if (!userSubscriptionId) {
-        console.log('⚠️ PATCH /admin/user-subscriptions/:id/status - No subscription available');
+        console.log(
+          '⚠️ PATCH /admin/user-subscriptions/:id/status - No subscription available',
+        );
         return;
       }
 
@@ -706,12 +873,16 @@ describe('Admin All Routes E2E Test - Real Data', () => {
         .expect(200);
 
       expect(response.body.data).toBeDefined();
-      console.log('✅ PATCH /admin/user-subscriptions/:id/status - Status updated');
+      console.log(
+        '✅ PATCH /admin/user-subscriptions/:id/status - Status updated',
+      );
     });
 
     it('POST /admin/user-subscriptions/:id/override-limits - Override usage limits', async () => {
       if (!userSubscriptionId) {
-        console.log('⚠️ POST /admin/user-subscriptions/:id/override-limits - No subscription available');
+        console.log(
+          '⚠️ POST /admin/user-subscriptions/:id/override-limits - No subscription available',
+        );
         return;
       }
 
@@ -726,7 +897,9 @@ describe('Admin All Routes E2E Test - Real Data', () => {
         .expect(201);
 
       expect(response.body.data).toBeDefined();
-      console.log('✅ POST /admin/user-subscriptions/:id/override-limits - Limits overridden');
+      console.log(
+        '✅ POST /admin/user-subscriptions/:id/override-limits - Limits overridden',
+      );
     });
 
     it('GET /admin/user-subscriptions/statistics - Get subscription statistics', async () => {
@@ -736,9 +909,14 @@ describe('Admin All Routes E2E Test - Real Data', () => {
 
       if (response.status === 200) {
         expect(response.body.data).toBeDefined();
-        console.log('✅ GET /admin/user-subscriptions/statistics - Statistics retrieved');
+        console.log(
+          '✅ GET /admin/user-subscriptions/statistics - Statistics retrieved',
+        );
       } else {
-        console.log('⚠️ GET /admin/user-subscriptions/statistics - Failed:', response.status);
+        console.log(
+          '⚠️ GET /admin/user-subscriptions/statistics - Failed:',
+          response.status,
+        );
       }
     });
   });
@@ -805,12 +983,18 @@ describe('Admin All Routes E2E Test - Real Data', () => {
       if (response.body.data.length > 0) {
         permissionId = response.body.data[0].id;
       }
-      console.log('✅ GET /permissions - Listed', response.body.data.length, 'permissions');
+      console.log(
+        '✅ GET /permissions - Listed',
+        response.body.data.length,
+        'permissions',
+      );
     });
 
     it('POST /roles/:id/permissions - Assign permissions to role', async () => {
       if (!roleId || !permissionId) {
-        console.log('⚠️ POST /roles/:id/permissions - Missing role or permission');
+        console.log(
+          '⚠️ POST /roles/:id/permissions - Missing role or permission',
+        );
         return;
       }
 
@@ -828,7 +1012,10 @@ describe('Admin All Routes E2E Test - Real Data', () => {
 
     it('POST /users/:userId/roles - Assign role to user', async () => {
       if (!createdUserId || !roleId) {
-        console.log('⚠️ POST /users/:userId/roles - Missing user or role', {createdUserId, roleId});
+        console.log('⚠️ POST /users/:userId/roles - Missing user or role', {
+          createdUserId,
+          roleId,
+        });
         return;
       }
 
@@ -843,15 +1030,23 @@ describe('Admin All Routes E2E Test - Real Data', () => {
         expect(response.body.success).toBe(true);
         console.log('✅ POST /users/:userId/roles - Role assigned to user');
       } else if (response.status === 404) {
-        console.log('⚠️ POST /users/:userId/roles - Service implementation broken (checks RoleID using UserID)');
+        console.log(
+          '⚠️ POST /users/:userId/roles - Service implementation broken (checks RoleID using UserID)',
+        );
       } else {
-         console.log('⚠️ POST /users/:userId/roles Failed:', response.status, JSON.stringify(response.body, null, 2));
+        console.log(
+          '⚠️ POST /users/:userId/roles Failed:',
+          response.status,
+          JSON.stringify(response.body, null, 2),
+        );
       }
     });
 
     it('POST /users/:userId/permissions - Assign direct permission to user', async () => {
       if (!createdUserId || !permissionId) {
-        console.log('⚠️ POST /users/:userId/permissions - Missing user or permission');
+        console.log(
+          '⚠️ POST /users/:userId/permissions - Missing user or permission',
+        );
         return;
       }
 
@@ -864,7 +1059,9 @@ describe('Admin All Routes E2E Test - Real Data', () => {
         .expect(201);
 
       expect(response.body.success).toBe(true);
-      console.log('✅ POST /users/:userId/permissions - Direct permission assigned');
+      console.log(
+        '✅ POST /users/:userId/permissions - Direct permission assigned',
+      );
     });
   });
 
@@ -930,7 +1127,9 @@ describe('Admin All Routes E2E Test - Real Data', () => {
 
       if (response.status === 200) {
         expect(response.body.data).toBeDefined();
-        console.log('✅ GET /reports/engagement - Engagement metrics retrieved');
+        console.log(
+          '✅ GET /reports/engagement - Engagement metrics retrieved',
+        );
       } else if (response.status === 404) {
         console.log('⚠️ GET /reports/engagement - Route not implemented');
       } else {
@@ -945,7 +1144,9 @@ describe('Admin All Routes E2E Test - Real Data', () => {
         .expect(200);
 
       expect(response.body.data).toBeDefined();
-      console.log('✅ GET /reports/appointments - Appointment analytics retrieved');
+      console.log(
+        '✅ GET /reports/appointments - Appointment analytics retrieved',
+      );
     });
 
     it('POST /reports/export - Export report data', async () => {
@@ -974,7 +1175,9 @@ describe('Admin All Routes E2E Test - Real Data', () => {
   describe('9. Family Members (Admin View)', () => {
     it('GET /admin/family-members/user/:userId - List user family members', async () => {
       if (!createdCustomerId) {
-        console.log('⚠️ GET /family-members/user/:userId - No customer available');
+        console.log(
+          '⚠️ GET /family-members/user/:userId - No customer available',
+        );
         return;
       }
 
@@ -984,7 +1187,9 @@ describe('Admin All Routes E2E Test - Real Data', () => {
         .expect(200);
 
       expect(Array.isArray(response.body.data)).toBe(true);
-      console.log('✅ GET /family-members/user/:userId - Family members listed');
+      console.log(
+        '✅ GET /family-members/user/:userId - Family members listed',
+      );
     });
   });
 
@@ -1039,12 +1244,16 @@ describe('Admin All Routes E2E Test - Real Data', () => {
         });
 
       if (response.status === 404) {
-        console.log('⚠️ POST /admin/notifications/broadcast - Route not implemented');
+        console.log(
+          '⚠️ POST /admin/notifications/broadcast - Route not implemented',
+        );
         return;
       }
 
       expect(response.status).toBe(201);
-      console.log('✅ POST /admin/notifications/broadcast - Notification broadcasted');
+      console.log(
+        '✅ POST /admin/notifications/broadcast - Notification broadcasted',
+      );
     });
   });
 
@@ -1092,70 +1301,72 @@ describe('Admin All Routes E2E Test - Real Data', () => {
 
   describe('12.5 Service Requests Management', () => {
     beforeAll(async () => {
-        if (!createdCustomerId) {
-           console.log('⚠️ Skipping Service Requests - No Customer ID');
-           return;
-        }
+      if (!createdCustomerId) {
+        console.log('⚠️ Skipping Service Requests - No Customer ID');
+        return;
+      }
 
-        // Reactivate plan (it was deactivated in previous tests)
-        if (subscriptionPlanId) {
-             await request(app.getHttpServer())
-            .put(`/admin/subscription-plans/${subscriptionPlanId}`)
-            .set('Authorization', `Bearer ${adminToken}`)
-            .send({ isActive: true })
-            .expect(200);
-            console.log('Setup 12.5: Plan Reactivated');
-        }
+      // Reactivate plan (it was deactivated in previous tests)
+      if (subscriptionPlanId) {
+        await request(app.getHttpServer())
+          .put(`/admin/subscription-plans/${subscriptionPlanId}`)
+          .set('Authorization', `Bearer ${adminToken}`)
+          .send({ isActive: true })
+          .expect(200);
+        console.log('Setup 12.5: Plan Reactivated');
+      }
 
-        // Ensure subscription exists (Robustness fix)
-        if (subscriptionPlanId && createdCustomerId) {
-             // Try to assign subscription just in case it's missing
-             const subResp = await request(app.getHttpServer())
-             .post('/admin/user-subscriptions/assign')
-             .set('Authorization', `Bearer ${adminToken}`)
-             .send({
-                userId: createdCustomerId,
-                planId: subscriptionPlanId,
-                startDate: new Date().toISOString(),
-                endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-             });
-             if (subResp.status === 201) {
-                 userSubscriptionId = subResp.body.data.id;
-                 console.log('Setup 12.5: Created backup subscription');
-             }
+      // Ensure subscription exists (Robustness fix)
+      if (subscriptionPlanId && createdCustomerId) {
+        // Try to assign subscription just in case it's missing
+        const subResp = await request(app.getHttpServer())
+          .post('/admin/user-subscriptions/assign')
+          .set('Authorization', `Bearer ${adminToken}`)
+          .send({
+            userId: createdCustomerId,
+            planId: subscriptionPlanId,
+            startDate: new Date().toISOString(),
+            endDate: new Date(
+              Date.now() + 30 * 24 * 60 * 60 * 1000,
+            ).toISOString(),
+          });
+        if (subResp.status === 201) {
+          userSubscriptionId = subResp.body.data.id;
+          console.log('Setup 12.5: Created backup subscription');
         }
+      }
 
-        // Login as customer to create request
-        const loginResp = await request(app.getHttpServer())
+      // Login as customer to create request
+      const loginResp = await request(app.getHttpServer())
         .post('/auth/login')
         .send({
           email: customerData.email,
           password: customerData.password,
         })
         .expect(200);
-        
-        const custToken = loginResp.body.data.accessToken;
 
-        // Create
-        const srResp = await request(app.getHttpServer())
+      const custToken = loginResp.body.data.accessToken;
+
+      // Create
+      const srResp = await request(app.getHttpServer())
         .post('/service-requests?serviceType=ISEE')
         .set('Authorization', `Bearer ${custToken}`)
         .send({
-          formData: { requestType: 'Test ISEE' }
+          formData: { requestType: 'Test ISEE' },
         })
         .expect(201);
-        
-        const srData = srResp.body.data.data || srResp.body.data;
-        serviceRequestId = srData.id;
-        console.log('Setup 12.5: Created Service Request:', serviceRequestId);
 
-        // Submit
-        await request(app.getHttpServer())
-            .post(`/service-requests/${serviceRequestId}/submit`)
-            .set('Authorization', `Bearer ${custToken}`)
-            .send({ notes: 'Submitting now that I have subscription' })
-            .expect(201);
-        console.log('Setup 12.5: Submitted Service Request');
+      const srData = srResp.body.data.data || srResp.body.data;
+      serviceRequestId = srData.id;
+      console.log('Setup 12.5: Created Service Request:', serviceRequestId);
+
+      // Submit
+      await request(app.getHttpServer())
+        .post(`/service-requests/${serviceRequestId}/submit`)
+        .set('Authorization', `Bearer ${custToken}`)
+        .send({ notes: 'Submitting now that I have subscription' })
+        .expect(201);
+      console.log('Setup 12.5: Submitted Service Request');
     });
 
     it('GET /admin/service-requests - List all service requests', async () => {
@@ -1166,7 +1377,11 @@ describe('Admin All Routes E2E Test - Real Data', () => {
 
       expect(Array.isArray(response.body.data)).toBe(true);
       expect(response.body.data.length).toBeGreaterThan(0);
-      console.log('✅ GET /service-requests - Listed', response.body.data.length, 'requests');
+      console.log(
+        '✅ GET /service-requests - Listed',
+        response.body.data.length,
+        'requests',
+      );
     });
 
     it('PATCH /admin/service-requests/:id/status - Update request status', async () => {
@@ -1193,7 +1408,9 @@ describe('Admin All Routes E2E Test - Real Data', () => {
         .expect(201);
 
       expect(response.body.data).toBeDefined();
-      console.log('✅ POST /service-requests/:id/assign - Assigned to operator');
+      console.log(
+        '✅ POST /service-requests/:id/assign - Assigned to operator',
+      );
     });
 
     it('POST /admin/service-requests/:id/notes - Add internal note', async () => {
@@ -1233,7 +1450,9 @@ describe('Admin All Routes E2E Test - Real Data', () => {
         .expect(201);
 
       // Successfully Requested
-      console.log('✅ POST /service-requests/:id/request-documents - Documents requested');
+      console.log(
+        '✅ POST /service-requests/:id/request-documents - Documents requested',
+      );
     });
   });
 

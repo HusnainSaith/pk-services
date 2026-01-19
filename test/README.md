@@ -1,6 +1,6 @@
-# LabVerse API Test Suite
+# pk servizi API Test Suite
 
-This directory contains comprehensive test cases for all modules in the LabVerse API project.
+This directory contains comprehensive test cases for all modules in the pk servizi API project.
 
 ## Test Structure
 

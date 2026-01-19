@@ -86,7 +86,15 @@ export async function seedPermissions(dataSource: DataSource) {
         // Appointments Management
         {
           resource: 'appointments',
-          actions: ['create', 'read', 'update', 'delete', 'list', 'assign', 'reschedule'],
+          actions: [
+            'create',
+            'read',
+            'update',
+            'delete',
+            'list',
+            'assign',
+            'reschedule',
+          ],
           description: 'Full appointment management',
         },
         {

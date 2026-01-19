@@ -46,24 +46,20 @@ async function seed() {
       if (!role) {
         role = roleRepo.create(roleData);
         await roleRepo.save(role);
-        console.log(
-          `Role "${roleData.name}" created.`,
-        );
+        console.log(`Role "${roleData.name}" created.`);
       } else {
-        console.log(
-          `Role "${roleData.name}" already exists.`,
-        );
+        console.log(`Role "${roleData.name}" already exists.`);
       }
     }
 
     // Seed admin user...
-    const adminEmail = 'admin_labverse@gmail.com';
+    const adminEmail = 'admin@pkservizi.com';
     let adminUser = await userRepo.findOne({ where: { email: adminEmail } });
     if (!adminUser) {
       const adminRole = await roleRepo.findOne({
         where: { name: RoleEnum.ADMIN },
       });
-      const password = await bcrypt.hash('Admin@12345', 10);
+      const password = await bcrypt.hash('Admin@123', 10);
       adminUser = userRepo.create({
         email: adminEmail,
         password,
@@ -72,7 +68,7 @@ async function seed() {
       });
       await userRepo.save(adminUser);
       console.log(
-        `Admin user "${adminEmail}" created with password: Admin@12345`,
+        `Admin user "${adminEmail}" created with password: Admin@123`,
       );
     } else {
       console.log(`Admin user "${adminEmail}" already exists.`);
